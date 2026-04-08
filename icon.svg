@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- White rounded background -->
+  <rect width="512" height="512" rx="115" ry="115" fill="#ffffff"/>
+  <!-- Restabfall (gray) – top left -->
+  <circle cx="156" cy="172" r="88" fill="#8E8E93" opacity="0.15"/>
+  <circle cx="156" cy="172" r="74" fill="#8E8E93"/>
+  <text x="156" y="197" text-anchor="middle" font-size="72" font-family="-apple-system,sans-serif">🗑️</text>
+  <!-- Bio-Tonne (green) – top right -->
+  <circle cx="356" cy="172" r="88" fill="#34C759" opacity="0.15"/>
+  <circle cx="356" cy="172" r="74" fill="#34C759"/>
+  <text x="356" y="197" text-anchor="middle" font-size="72" font-family="-apple-system,sans-serif">🌱</text>
+  <!-- Gelbe Tonne (yellow) – bottom left -->
+  <circle cx="156" cy="356" r="88" fill="#FFD60A" opacity="0.15"/>
+  <circle cx="156" cy="356" r="74" fill="#FFD60A"/>
+  <text x="156" y="381" text-anchor="middle" font-size="72" font-family="-apple-system,sans-serif">♻️</text>
+  <!-- Blaue Tonne (blue) – bottom right -->
+  <circle cx="356" cy="356" r="88" fill="#007AFF" opacity="0.15"/>
+  <circle cx="356" cy="356" r="74" fill="#007AFF"/>
+  <text x="356" y="381" text-anchor="middle" font-size="72" font-family="-apple-system,sans-serif">📄</text>
+</svg>
