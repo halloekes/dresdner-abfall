@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Abfall DD">
@@ -12,29 +13,12 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <meta name="theme-color" content="#007AFF">
 
-  <!--
-    ╔══════════════════════════════════════════════════════════╗
-    ║  DRESDNER ABFALL – Progressive Web App                  ║
-    ║                                                          ║
-    ║  Lokal starten (Mac):                                    ║
-    ║    cd /pfad/zu/diesem/ordner                             ║
-    ║    python3 -m http.server 8080                           ║
-    ║                                                          ║
-    ║  Dann auf iPhone im Safari öffnen:                       ║
-    ║    http://DEINE-MAC-IP:8080                              ║
-    ║    → Teilen → „Zum Home-Bildschirm"                      ║
-    ║                                                          ║
-    ║  Alternativ: Datei auf GitHub Pages oder iCloud hosten   ║
-    ╚══════════════════════════════════════════════════════════╝
-  -->
-
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
       --blue:    #007AFF;
       --green:   #34C759;
-      --yellow:  #FFD60A;
       --gray:    #8E8E93;
       --orange:  #FF9500;
       --red:     #FF3B30;
@@ -42,7 +26,6 @@
       --surface: #FFFFFF;
       --border:  rgba(60,60,67,0.18);
       --label:   #000000;
-      --label2:  rgba(60,60,67,0.85);
       --label3:  rgba(60,60,67,0.55);
       --tabbar:  rgba(249,249,249,0.94);
       --safe-t:  env(safe-area-inset-top, 0px);
@@ -55,33 +38,20 @@
         --surface: #2C2C2E;
         --border:  rgba(84,84,88,0.65);
         --label:   #FFFFFF;
-        --label2:  rgba(235,235,245,0.85);
         --label3:  rgba(235,235,245,0.55);
         --tabbar:  rgba(29,29,31,0.94);
       }
     }
 
-    html, body {
-      height: 100%;
-      overflow: hidden;
-      background: var(--bg);
-      color: var(--label);
+    html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--label);
       font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
-      -webkit-text-size-adjust: 100%;
-    }
+      -webkit-text-size-adjust: 100%; }
 
-    #app {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      height: 100dvh;
-    }
+    #app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
 
-    /* ── Tab Views ──────────────────────────────────────────── */
     .tab-view { flex: 1; overflow: hidden; display: none; flex-direction: column; }
     .tab-view.active { display: flex; }
 
-    /* ── Navigation Bar ──────────────────────────────────────── */
     .nav-bar {
       background: var(--tabbar);
       backdrop-filter: blur(20px) saturate(180%);
@@ -90,340 +60,141 @@
       padding: calc(var(--safe-t) + 8px) 16px 12px;
       flex-shrink: 0;
     }
-    .nav-bar-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      min-height: 32px;
-    }
-    .nav-title-large {
-      font-size: 34px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-      line-height: 1.1;
-    }
-    .nav-title-inline {
-      font-size: 17px;
-      font-weight: 600;
-    }
+    .nav-bar-row { display: flex; align-items: center; justify-content: space-between; min-height: 32px; }
+    .nav-title-large { font-size: 34px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.1; }
+    .nav-title-inline { font-size: 17px; font-weight: 600; }
 
-    /* ── Scrollable Content ──────────────────────────────────── */
-    .content {
-      flex: 1;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      padding-bottom: 20px;
-    }
+    .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 20px; }
 
-    /* ── Sections & Cards ────────────────────────────────────── */
     .section { margin: 20px 16px 0; }
-    .section-label {
-      font-size: 13px;
-      color: var(--label3);
-      text-transform: uppercase;
-      letter-spacing: 0.4px;
-      margin-bottom: 7px;
-      padding-left: 16px;
-    }
-    .card {
-      background: var(--surface);
-      border-radius: 12px;
-      overflow: hidden;
-    }
+    .section-label { font-size: 13px; color: var(--label3); text-transform: uppercase;
+      letter-spacing: 0.4px; margin-bottom: 7px; padding-left: 16px; }
+    .card { background: var(--surface); border-radius: 12px; overflow: hidden; }
 
-    /* ── Entry Row (waste collection) ────────────────────────── */
-    .entry-row {
-      display: flex;
-      align-items: center;
-      padding: 11px 16px;
-      gap: 14px;
-      border-bottom: 0.5px solid var(--border);
-    }
+    .entry-row { display: flex; align-items: center; padding: 11px 16px; gap: 14px;
+      border-bottom: 0.5px solid var(--border); }
     .entry-row:last-child { border-bottom: none; }
-
-    .waste-icon {
-      width: 46px;
-      height: 46px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 21px;
-      flex-shrink: 0;
-    }
+    .waste-icon { width: 46px; height: 46px; border-radius: 50%; display: flex;
+      align-items: center; justify-content: center; font-size: 21px; flex-shrink: 0; }
     .entry-info { flex: 1; min-width: 0; }
-    .entry-name { font-size: 16px; font-weight: 600; color: var(--label); }
-    .entry-date {
-      font-size: 14px;
-      color: var(--label3);
-      margin-top: 2px;
-    }
+    .entry-name { font-size: 16px; font-weight: 600; }
+    .entry-date { font-size: 14px; color: var(--label3); margin-top: 2px; }
     .entry-date.urgent { color: var(--orange); font-weight: 500; }
 
-    /* ── Address Row ─────────────────────────────────────────── */
-    .addr-row {
-      display: flex;
-      align-items: center;
-      padding: 12px 16px;
-      gap: 12px;
-      border-bottom: 0.5px solid var(--border);
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-    }
+    .addr-row { display: flex; align-items: center; padding: 12px 16px; gap: 12px;
+      border-bottom: 0.5px solid var(--border); cursor: pointer;
+      -webkit-tap-highlight-color: transparent; }
     .addr-row:last-child { border-bottom: none; }
     .addr-info { flex: 1; min-width: 0; }
     .addr-name { font-size: 16px; font-weight: 600; color: var(--label); }
     .addr-sub  { font-size: 13px; color: var(--label3); margin-top: 2px; }
     .addr-check { color: var(--blue); font-size: 20px; flex-shrink: 0; }
-    .addr-delete {
-      background: none;
-      border: none;
-      color: var(--red);
-      font-size: 18px;
-      padding: 4px 6px;
-      cursor: pointer;
-      flex-shrink: 0;
-      -webkit-tap-highlight-color: transparent;
-    }
+    .addr-delete { background: none; border: none; color: var(--red); font-size: 18px;
+      padding: 4px 6px; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
 
-    /* ── Form Steps ──────────────────────────────────────────── */
     .form-step { display: none; }
     .form-step.active { display: block; }
 
-    /* ── Dropdown ────────────────────────────────────────────── */
-    .form-section { position: relative; }
+    .form-section { position: relative; margin: 18px 16px 0; }
+    .form-label { font-size: 13px; color: var(--label3); text-transform: uppercase;
+      letter-spacing: 0.4px; margin-bottom: 7px; padding-left: 16px; }
+    .form-card { background: var(--surface); border-radius: 12px; overflow: hidden; }
+    .form-row { display: flex; align-items: center; padding: 0 16px;
+      border-bottom: 0.5px solid var(--border); min-height: 44px; gap: 8px; }
+    .form-row:last-child { border-bottom: none; }
+    .form-row input, .form-row select {
+      flex: 1; background: none; border: none; outline: none;
+      font-size: 16px; color: var(--label); padding: 12px 0;
+      -webkit-appearance: none; width: 100%; }
+    .form-row input::placeholder { color: var(--label3); }
+
     .dropdown {
-      position: absolute;
-      top: calc(100% + 8px);
-      left: 0;
-      right: 0;
-      z-index: 20;
-      background: var(--surface);
-      border-radius: 12px;
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      z-index: 100; background: var(--surface); border-radius: 12px;
       border: 0.5px solid var(--border);
-      margin-top: 0;
-      max-height: 200px;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+      max-height: 240px; overflow-y: auto; -webkit-overflow-scrolling: touch;
     }
-    .dropdown-item {
-      padding: 12px 16px;
-      border-bottom: 0.5px solid var(--border);
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      min-height: 44px;
-      display: flex;
-      align-items: center;
-    }
+    .dropdown-item { padding: 13px 16px; border-bottom: 0.5px solid var(--border);
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+      min-height: 44px; display: flex; align-items: center; font-size: 16px; }
     .dropdown-item:last-child { border-bottom: none; }
-    .dropdown-item:hover { background: rgba(0,122,255,0.1); }
+    .dropdown-item:active { background: rgba(0,122,255,0.08); }
 
-    /* ── Buttons ─────────────────────────────────────────────── */
-    .btn-primary, .btn-secondary {
-      background: var(--blue);
-      color: white;
-      border: none;
-      border-radius: 12px;
-      padding: 12px 24px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      min-height: 44px;
-    }
-    .btn-secondary { background: var(--gray); }
-    .btn-primary:disabled, .btn-secondary:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
+    .btn-text { background: none; border: none; color: var(--blue); font-size: 17px;
+      cursor: pointer; padding: 4px 2px; -webkit-tap-highlight-color: transparent; }
 
-    /* ── Info Row (Einstellungen) ─────────────────────────────── */
-    .info-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      border-bottom: 0.5px solid var(--border);
-      min-height: 44px;
-      gap: 12px;
+    .btn-primary {
+      background: var(--gray); color: white; border: none; border-radius: 12px;
+      padding: 13px 24px; font-size: 17px; font-weight: 600; cursor: pointer;
+      -webkit-tap-highlight-color: transparent; min-height: 44px; width: 100%;
+      transition: background 0.25s;
     }
+    .btn-primary:not(:disabled)       { background: var(--blue); }
+    .btn-primary.ready:not(:disabled) { background: var(--green); }
+    .btn-primary:disabled             { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary:active:not(:disabled){ opacity: 0.75; }
+
+    .btn-secondary { background: var(--gray); color: white; border: none; border-radius: 12px;
+      padding: 13px 24px; font-size: 17px; font-weight: 600; cursor: pointer;
+      -webkit-tap-highlight-color: transparent; min-height: 44px; }
+
+    .info-row { display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; border-bottom: 0.5px solid var(--border); min-height: 44px; gap: 12px; }
     .info-row:last-child { border-bottom: none; }
     .info-key { font-size: 16px; color: var(--label); }
     .info-val { font-size: 15px; color: var(--label3); text-align: right; }
 
-    /* ── Empty / Loading States ──────────────────────────────── */
-    .state-box {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 48px 24px;
-      text-align: center;
-    }
+    .state-box { flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 8px; padding: 48px 24px; text-align: center; }
     .state-icon  { font-size: 52px; opacity: 0.35; }
     .state-title { font-size: 20px; font-weight: 600; color: var(--label); }
     .state-desc  { font-size: 15px; color: var(--label3); max-width: 280px; line-height: 1.4; }
 
-    .spinner {
-      width: 24px; height: 24px;
-      border: 2.5px solid var(--border);
-      border-top-color: var(--blue);
-      border-radius: 50%;
-      animation: spin 0.75s linear infinite;
-    }
+    .spinner { width: 24px; height: 24px; border: 2.5px solid var(--border);
+      border-top-color: var(--blue); border-radius: 50%; animation: spin 0.75s linear infinite; }
 
-    /* ── Tab Bar ─────────────────────────────────────────────── */
-    .tab-bar {
-      background: var(--tabbar);
-      backdrop-filter: blur(20px) saturate(180%);
+    .tab-bar { background: var(--tabbar); backdrop-filter: blur(20px) saturate(180%);
       -webkit-backdrop-filter: blur(20px) saturate(180%);
-      border-top: 0.5px solid var(--border);
-      display: flex;
-      padding-bottom: var(--safe-b);
-      flex-shrink: 0;
-    }
-    .tab-btn {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 8px 4px 3px;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      gap: 2px;
-      border: none;
-      background: none;
-    }
+      border-top: 0.5px solid var(--border); display: flex;
+      padding-bottom: var(--safe-b); flex-shrink: 0; }
+    .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: 8px 4px 3px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+      gap: 2px; border: none; background: none; }
     .tab-icon  { font-size: 24px; }
     .tab-label { font-size: 10px; font-weight: 500; }
-    .tab-btn.active  { color: var(--blue); }
+    .tab-btn.active       { color: var(--blue); }
     .tab-btn:not(.active) { color: var(--gray); }
 
-    /* ── Buttons ─────────────────────────────────────────────── */
-    .btn-text {
-      background: none; border: none;
-      color: var(--blue); font-size: 17px;
-      cursor: pointer; padding: 4px 2px;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .btn-primary {
-      background: var(--blue); color: #fff; border: none;
-      border-radius: 14px; padding: 15px 20px;
-      font-size: 17px; font-weight: 600;
-      width: 100%; cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      transition: opacity 0.15s;
-    }
-    .btn-primary:disabled { opacity: 0.45; }
-    .btn-primary:active   { opacity: 0.75; }
+    .reload-btn { background: none; border: none; color: var(--blue); font-size: 20px;
+      cursor: pointer; padding: 4px 8px; -webkit-tap-highlight-color: transparent; }
 
-    /* ── Address Picker Dropdown ─────────────────────────────── */
-    .addr-picker {
-      position: fixed;
-      right: 12px;
-      background: var(--surface);
-      border-radius: 13px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.08);
-      z-index: 300;
-      min-width: 210px;
-      overflow: hidden;
-      animation: fadeScale 0.18s cubic-bezier(0.34,1.56,0.64,1);
-      transform-origin: top right;
-    }
-    .addr-picker-item {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 13px 16px; gap: 10px;
-      font-size: 15px; cursor: pointer;
-      border-bottom: 0.5px solid var(--border);
-      -webkit-tap-highlight-color: transparent;
-    }
+    .addr-picker { position: fixed; right: 12px; background: var(--surface);
+      border-radius: 13px; box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      z-index: 300; min-width: 210px; overflow: hidden;
+      animation: fadeScale 0.18s cubic-bezier(0.34,1.56,0.64,1); transform-origin: top right; }
+    .addr-picker-item { display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 16px; gap: 10px; font-size: 15px; cursor: pointer;
+      border-bottom: 0.5px solid var(--border); -webkit-tap-highlight-color: transparent; }
     .addr-picker-item:last-child { border-bottom: none; }
     .addr-picker-item.selected { font-weight: 600; color: var(--blue); }
-    .picker-check { color: var(--blue); }
 
-    /* ── Modal Sheet ─────────────────────────────────────────── */
-    .backdrop {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.45);
-      z-index: 200;
-      display: none; align-items: flex-end;
-    }
-    .backdrop.open {
-      display: flex;
-      animation: fadeIn 0.22s ease;
-    }
-    .sheet {
-      background: var(--bg);
-      border-radius: 20px 20px 0 0;
-      width: 100%; max-height: 93dvh;
-      display: flex; flex-direction: column;
-      animation: slideUp 0.32s cubic-bezier(0.32, 0.72, 0, 1);
-    }
-    .sheet-handle {
-      width: 36px; height: 4px;
-      background: var(--border);
-      border-radius: 2px;
-      margin: 10px auto 0;
-      flex-shrink: 0;
-    }
-    .sheet-header {
-      display: flex; align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px 8px;
-      flex-shrink: 0;
-    }
+    .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      z-index: 200; display: none; align-items: flex-end; }
+    .backdrop.open { display: flex; animation: fadeIn 0.22s ease; }
+    .sheet { background: var(--bg); border-radius: 20px 20px 0 0; width: 100%;
+      max-height: 93dvh; display: flex; flex-direction: column;
+      animation: slideUp 0.32s cubic-bezier(0.32, 0.72, 0, 1); }
+    .sheet-handle { width: 36px; height: 4px; background: var(--border);
+      border-radius: 2px; margin: 10px auto 0; flex-shrink: 0; }
+    .sheet-header { display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px 8px; flex-shrink: 0; }
     .sheet-title { font-size: 17px; font-weight: 600; }
-    .sheet-body  { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(var(--safe-b) + 16px); }
+    .sheet-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      padding-bottom: calc(var(--safe-b) + 24px); }
 
-    /* ── Form inside Sheet ───────────────────────────────────── */
-    .form-section { margin: 18px 16px 0; }
-    .form-label {
-      font-size: 13px; color: var(--label3);
-      text-transform: uppercase; letter-spacing: 0.4px;
-      margin-bottom: 7px; padding-left: 16px;
-    }
-    .form-card { background: var(--surface); border-radius: 12px; overflow: hidden; }
-    .form-row {
-      display: flex; align-items: center;
-      padding: 0 16px; border-bottom: 0.5px solid var(--border);
-      min-height: 44px; gap: 8px;
-    }
-    .form-row:last-child { border-bottom: none; }
-    .form-row label { font-size: 16px; color: var(--label); flex-shrink: 0; min-width: 100px; }
-    .form-row input {
-      flex: 1; background: none; border: none; outline: none;
-      font-size: 16px; color: var(--label);
-      text-align: right; padding: 12px 0;
-      -webkit-appearance: none;
-    }
-    .form-row input::placeholder { color: var(--label3); }
-    .form-row input[type=number] { -moz-appearance: textfield; }
-    .form-row input[type=number]::-webkit-outer-spin-button,
-    .form-row input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .status-msg { font-size: 14px; color: var(--label3); padding: 8px 0; text-align: center; }
 
-    .form-hint {
-      font-size: 13px; color: var(--label3);
-      padding: 8px 16px 0; line-height: 1.5;
-    }
-    .form-hint a { color: var(--blue); text-decoration: none; }
-    .form-hint code {
-      font-family: 'SF Mono', Menlo, monospace;
-      font-size: 12px;
-      background: rgba(128,128,128,0.12);
-      padding: 1px 4px; border-radius: 3px;
-    }
-
-    /* ── Reload Button ───────────────────────────────────────── */
-    .reload-btn {
-      background: none; border: none;
-      color: var(--blue); font-size: 20px;
-      cursor: pointer; padding: 4px 8px;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    /* ── Animations ──────────────────────────────────────────── */
     @keyframes fadeIn    { from { opacity: 0 } to { opacity: 1 } }
     @keyframes slideUp   { from { transform: translateY(100%) } to { transform: translateY(0) } }
     @keyframes fadeScale { from { opacity: 0; transform: scale(0.92) } to { opacity: 1; transform: scale(1) } }
@@ -433,13 +204,13 @@
 <body>
 <div id="app">
 
-  <!-- ── TERMINE TAB ──────────────────────────────────────── -->
+  <!-- TERMINE TAB -->
   <div id="tab-termine" class="tab-view active">
     <div class="nav-bar">
       <div class="nav-bar-row">
         <div class="nav-title-large" id="termine-title">Abfuhrtermine</div>
         <div style="display:flex;gap:4px;align-items:center">
-          <button class="reload-btn" id="reload-btn" onclick="reloadEntries()" title="Aktualisieren">↻</button>
+          <button class="reload-btn" onclick="reloadEntries()">↻</button>
           <button class="btn-text" id="addr-picker-btn" onclick="toggleAddrPicker(event)" style="display:none;font-size:20px">🏠</button>
         </div>
       </div>
@@ -447,7 +218,7 @@
     <div id="termine-body" class="content"></div>
   </div>
 
-  <!-- ── ADRESSEN TAB ─────────────────────────────────────── -->
+  <!-- ADRESSEN TAB -->
   <div id="tab-adressen" class="tab-view">
     <div class="nav-bar">
       <div class="nav-bar-row">
@@ -458,7 +229,7 @@
     <div id="adressen-body" class="content"></div>
   </div>
 
-  <!-- ── EINSTELLUNGEN TAB ────────────────────────────────── -->
+  <!-- EINSTELLUNGEN TAB -->
   <div id="tab-einstellungen" class="tab-view">
     <div class="nav-bar">
       <div class="nav-bar-row">
@@ -468,25 +239,24 @@
     <div id="einstellungen-body" class="content"></div>
   </div>
 
-  <!-- ── TAB BAR ──────────────────────────────────────────── -->
+  <!-- TAB BAR -->
   <div class="tab-bar">
-    <button class="tab-btn active" id="tabbtn-termine"      onclick="switchTab('termine')">
+    <button class="tab-btn active" id="tabbtn-termine" onclick="switchTab('termine')">
       <span class="tab-icon">📅</span><span class="tab-label">Termine</span>
     </button>
-    <button class="tab-btn"        id="tabbtn-adressen"     onclick="switchTab('adressen')">
+    <button class="tab-btn" id="tabbtn-adressen" onclick="switchTab('adressen')">
       <span class="tab-icon">📍</span><span class="tab-label">Adressen</span>
     </button>
-    <button class="tab-btn"        id="tabbtn-einstellungen" onclick="switchTab('einstellungen')">
+    <button class="tab-btn" id="tabbtn-einstellungen" onclick="switchTab('einstellungen')">
       <span class="tab-icon">⚙️</span><span class="tab-label">Einstellungen</span>
     </button>
   </div>
-
 </div>
 
-<!-- ── ADDRESS PICKER DROPDOWN ────────────────────────────── -->
+<!-- ADDRESS PICKER -->
 <div id="addr-picker" class="addr-picker" style="display:none"></div>
 
-<!-- ── ADD ADDRESS SHEET ──────────────────────────────────── -->
+<!-- ADD ADDRESS SHEET -->
 <div id="sheet-backdrop" class="backdrop" onclick="onBackdropClick(event)">
   <div class="sheet">
     <div class="sheet-handle"></div>
@@ -495,7 +265,7 @@
       <div class="sheet-title">Neue Adresse</div>
       <div style="width:80px"></div>
     </div>
-    <div class="sheet-body" id="sheet-body">
+    <div class="sheet-body">
 
       <!-- Stufe 1: Straße -->
       <div id="step-street" class="form-step active">
@@ -503,13 +273,16 @@
           <div class="form-label">Straße eingeben</div>
           <div class="form-card">
             <div class="form-row">
-              <input type="text" id="f-street-input" placeholder="z.B. Schandauer Straße" autocomplete="off" oninput="onStreetInput(this.value)">
+              <input type="text" id="f-street-input"
+                placeholder="z.B. Schandauer Straße"
+                autocomplete="off"
+                oninput="onStreetInput(this.value)">
             </div>
           </div>
           <div id="street-dropdown" class="dropdown" style="display:none"></div>
         </div>
-        <div class="form-section" style="margin-top:28px">
-          <button class="btn-secondary" id="btn-next-street" onclick="nextStep()" disabled>Weiter</button>
+        <div class="form-section" style="margin-top:24px">
+          <button class="btn-primary" id="btn-next-street" onclick="nextStep()" disabled>Weiter</button>
         </div>
       </div>
 
@@ -525,9 +298,9 @@
             </div>
           </div>
         </div>
-        <div class="form-section" style="margin-top:28px">
+        <div class="form-section" style="margin-top:24px;display:flex;gap:10px">
           <button class="btn-secondary" onclick="prevStep()">Zurück</button>
-          <button class="btn-primary" id="btn-next-hnr" onclick="nextStep()" disabled style="margin-left:8px">Weiter</button>
+          <button class="btn-primary" id="btn-next-hnr" onclick="nextStep()" disabled style="flex:1;width:auto">Weiter</button>
         </div>
       </div>
 
@@ -549,9 +322,12 @@
             </div>
           </div>
         </div>
-        <div class="form-section" style="margin-top:28px">
+        <div class="form-section">
+          <div id="save-status" class="status-msg" style="display:none"></div>
+        </div>
+        <div class="form-section" style="margin-top:12px;display:flex;gap:10px">
           <button class="btn-secondary" onclick="prevStep()">Zurück</button>
-          <button class="btn-primary" id="btn-save" onclick="saveNewAddress()" style="margin-left:8px">Adresse speichern</button>
+          <button class="btn-primary ready" id="btn-save" onclick="saveNewAddress()" style="flex:1;width:auto">Adresse speichern</button>
         </div>
       </div>
 
@@ -562,26 +338,42 @@
 <script>
 'use strict';
 
-// ── Constants ────────────────────────────────────────────────────────────────
-
-// Free CORS proxy – required because stadtplan.dresden.de has no CORS headers.
-// Falls back to a second proxy if the first fails.
+// ── CORS Proxy ────────────────────────────────────────────────────────────────
+// dresden.de blocks cross-origin requests. We route everything through a proxy.
+// The Wicket jsessionid lives in the URL path, so the proxy forwards it correctly.
 const PROXIES = [
-  url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
 ];
 
-// ── State ────────────────────────────────────────────────────────────────────
+async function proxyFetch(url, opts = {}) {
+  for (const make of PROXIES) {
+    try {
+      const r = await fetch(make(url), { signal: AbortSignal.timeout(12000), ...opts });
+      if (r.ok) return r;
+    } catch { /* try next proxy */ }
+  }
+  throw new Error('Alle Verbindungsversuche fehlgeschlagen');
+}
 
-let addresses    = [];   // [{ id, label, strasse, hausnummer, standortId, version }]
+// ── State ─────────────────────────────────────────────────────────────────────
+let addresses       = [];
 let activeAddressId = null;
-let entries      = [];   // [{ date, wasteType }]
-let isLoading    = false;
-let loadError    = null;
-let pickerOpen   = false;
+let entries         = [];
+let isLoading       = false;
+let loadError       = null;
+let pickerOpen      = false;
+let lastLoadTime    = 0;
 
-// ── Persistence ──────────────────────────────────────────────────────────────
+// Wicket session URLs – refreshed each time the sheet opens
+let wSession = { autocompleteUrl: '', hnrUrl: '', submitUrl: '', ok: false };
 
+// Form state
+let currentStep    = 'street';
+let selectedStreet = '';
+let selectedHnr    = '';
+
+// ── Persistence ───────────────────────────────────────────────────────────────
 function persist() {
   localStorage.setItem('addresses', JSON.stringify(addresses));
   localStorage.setItem('activeAddressId', activeAddressId || '');
@@ -589,379 +381,257 @@ function persist() {
 
 function hydrate() {
   try {
-    addresses = JSON.parse(localStorage.getItem('addresses') || '[]');
+    addresses       = JSON.parse(localStorage.getItem('addresses') || '[]');
     activeAddressId = localStorage.getItem('activeAddressId') || null;
-    // Fall back to first address if stored ID is gone
-    if (activeAddressId && !addresses.find(a => a.id === activeAddressId)) {
+    if (activeAddressId && !addresses.find(a => a.id === activeAddressId))
       activeAddressId = addresses[0]?.id ?? null;
-    }
-    if (!activeAddressId && addresses.length > 0) activeAddressId = addresses[0].id;
-  } catch {
-    addresses = [];
-    activeAddressId = null;
-  }
+    if (!activeAddressId && addresses.length > 0)
+      activeAddressId = addresses[0].id;
+  } catch { addresses = []; activeAddressId = null; }
 }
 
 function migrateOldData() {
-  const oldAddresses = localStorage.getItem('dresdner_abfall_addresses');
-  const oldSelected = localStorage.getItem('dresdner_abfall_selected');
-  if (oldAddresses && !localStorage.getItem('addresses')) {
-    const migrated = JSON.parse(oldAddresses).map(a => ({
-      id: a.id,
-      label: a.customName || '',
-      strasse: a.street || '',
-      hausnummer: a.houseNumber || '',
-      standortId: a.standortId,
-      version: 1
-    }));
-    localStorage.setItem('addresses', JSON.stringify(migrated));
-    localStorage.setItem('activeAddressId', oldSelected || migrated[0]?.id || '');
-  }
-  // Also migrate old single address
   const oldId = localStorage.getItem('standortId');
   if (oldId && !localStorage.getItem('addresses')) {
-    const migrated = [{
-      id: Date.now().toString(),
-      label: localStorage.getItem('addressName') || '',
-      strasse: '',
-      hausnummer: '',
-      standortId: oldId,
-      version: 1
-    }];
-    localStorage.setItem('addresses', JSON.stringify(migrated));
-    localStorage.setItem('activeAddressId', migrated[0].id);
+    const m = [{ id: Date.now().toString(), label: localStorage.getItem('addressName') || '',
+      strasse: '', hausnummer: '', standortId: oldId, version: 1 }];
+    localStorage.setItem('addresses', JSON.stringify(m));
+    localStorage.setItem('activeAddressId', m[0].id);
   }
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function uid() { return crypto.randomUUID(); }
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 
 function displayName(addr) {
-  return addr.label || `${addr.strasse} ${addr.hausnummer}`;
+  if (addr.label) return addr.label;
+  if (addr.strasse) return (addr.strasse + ' ' + addr.hausnummer).trim();
+  return 'ID ' + addr.standortId;
 }
 
 function sortedAddresses() {
-  return [...addresses].sort((a, b) =>
-    displayName(a).localeCompare(displayName(b), 'de'));
+  return [...addresses].sort((a, b) => displayName(a).localeCompare(displayName(b), 'de'));
 }
 
-// ── Dresden Abfall API ────────────────────────────────────────────────────────
+// ── Dresden Wicket API ────────────────────────────────────────────────────────
+// Apache Wicket embeds session-scoped component URLs in the page HTML.
+// We fetch the page via proxy to get these URLs (which include the jsessionid),
+// then call those URLs also via proxy – the jsessionid in the path is enough
+// for Wicket to maintain session state without cookies.
 
-let autocompleteUrlTemplate = '';
-let hnrUrlTemplate = '';
-let submitUrlTemplate = '';
-let templatesLoaded = false;
-
-function buildWicketUrl(template, replacement) {
-  if (!template) return '';
-  let url = template.replace('./wastebins', 'wastebins');
-  if (replacement) {
-    if (url.includes('q=no')) {
-      url = url.replace('q=no', replacement);
-    } else if (url.includes('?')) {
-      url = `${url}&${replacement}`;
-    } else {
-      url = `${url}?${replacement}`;
-    }
-  } else {
-    url = url.replace(/([?&])q=no(&?)/, (match, prefix, suffix) => {
-      if (suffix === '&') return prefix;
-      return '';
-    }).replace(/[?&]$/, '');
-  }
-  return 'https://www.dresden.de/apps_ext/AbfallApp/' + url;
-}
-
-async function prepareWicketTemplates() {
-  if (templatesLoaded) return;
+async function refreshWicketSession() {
+  wSession = { autocompleteUrl: '', hnrUrl: '', submitUrl: '', ok: false };
   try {
-    const res = await fetchWithProxy('https://www.dresden.de/apps_ext/AbfallApp/wastebins');
+    const res  = await proxyFetch('https://www.dresden.de/apps_ext/AbfallApp/wastebins');
     const html = await res.text();
-    const matches = [...html.matchAll(/"u":"(\.\/wastebins[^\"]*searchForm-street[^\"]*)"/g)];
-    for (const m of matches) {
-      const url = m[1];
-      if (url.includes('.2-searchForm-street')) autocompleteUrlTemplate = url;
-      if (url.includes('.1-searchForm-street')) hnrUrlTemplate = url;
-      if (url.includes('.0-searchForm-street')) submitUrlTemplate = url;
+
+    const re = /"u":"(\.\/wastebins[^"]+searchForm-street[^"]*)"/g;
+    let m;
+    while ((m = re.exec(html)) !== null) {
+      const rel = m[1];
+      // Build absolute URL (keep jsessionid in path)
+      const abs = 'https://www.dresden.de/apps_ext/AbfallApp/' + rel.replace(/^\.\//, '');
+      if (rel.includes('.2-searchForm-street')) wSession.autocompleteUrl = abs;
+      if (rel.includes('.1-searchForm-street')) wSession.hnrUrl          = abs;
+      if (rel.includes('.0-searchForm-street')) wSession.submitUrl        = abs;
     }
-    templatesLoaded = !!autocompleteUrlTemplate && !!hnrUrlTemplate && !!submitUrlTemplate;
+    wSession.ok = !!(wSession.autocompleteUrl && wSession.hnrUrl && wSession.submitUrl);
   } catch (e) {
-    console.warn('Failed to prepare Wicket templates:', e);
+    console.warn('Wicket session refresh failed:', e);
   }
+  return wSession.ok;
 }
 
-function parseList(html) {
+// Replace the Wicket placeholder &q=no with the real parameter
+function replaceQ(url, newParam) {
+  if (url.includes('&q=no')) return url.replace('&q=no', '&' + newParam);
+  if (url.includes('?q=no')) return url.replace('?q=no', '?' + newParam);
+  return url + '&' + newParam;
+}
+
+function parseItems(html) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
-  return Array.from(doc.querySelectorAll('li[textvalue]'))
-    .map(li => li.getAttribute('textvalue')).filter(Boolean).slice(0, 8);
-}
-
-function appendQueryParam(url, key, value) {
-  const separator = url.includes('?') ? '&' : '?';
-  return `${url}${separator}${key}=${encodeURIComponent(value)}`;
+  const out = [];
+  doc.querySelectorAll('li').forEach(li => {
+    const v = li.getAttribute('textvalue') || li.textContent.trim();
+    if (v) out.push(v);
+  });
+  return [...new Set(out)].slice(0, 12);
 }
 
 async function fetchStreets(query) {
-  await prepareWicketTemplates();
-  if (!autocompleteUrlTemplate) throw new Error('Wicket-Autocomplete-URL konnte nicht geladen werden');
-  const url = buildWicketUrl(autocompleteUrlTemplate, 'q=' + encodeURIComponent(query));
-  const res = await fetchWithProxy(url);
-  const html = await res.text();
-  return parseList(html);
+  if (!wSession.ok) throw new Error('Keine Session');
+  const url = replaceQ(wSession.autocompleteUrl, 'q=' + encodeURIComponent(query));
+  const res = await proxyFetch(url);
+  return parseItems(await res.text());
 }
 
 async function fetchHouseNumbers(street) {
-  await prepareWicketTemplates();
-  if (!hnrUrlTemplate) throw new Error('Wicket-Hausnummer-URL konnte nicht geladen werden');
-  let url = buildWicketUrl(hnrUrlTemplate);
-  url = appendQueryParam(url, 'street', street);
-  const res = await fetchWithProxy(url);
-  const html = await res.text();
-  return parseList(html);
+  if (!wSession.ok) throw new Error('Keine Session');
+  // Step 1: set street in Wicket server state (.0- endpoint)
+  const setUrl = replaceQ(wSession.submitUrl, 'street=' + encodeURIComponent(street));
+  await proxyFetch(setUrl);
+  // Step 2: fetch house numbers (.1- endpoint)
+  const hnrUrl = replaceQ(wSession.hnrUrl, 'street=' + encodeURIComponent(street));
+  const res    = await proxyFetch(hnrUrl);
+  return parseItems(await res.text());
 }
 
-async function submitAddress(street, houseNumber) {
-  await prepareWicketTemplates();
-  if (!submitUrlTemplate) throw new Error('Wicket-Submit-URL konnte nicht geladen werden');
-  let url = buildWicketUrl(submitUrlTemplate);
-  if (url.includes('q=')) {
-    url = url.replace('q=', `street=${encodeURIComponent(street)}&q=`);
-  } else {
-    url += `&street=${encodeURIComponent(street)}`;
-  }
-  url += `&hausnummer=${encodeURIComponent(houseNumber)}`;
-  const res = await fetchWithProxy(url);
+async function fetchStandortId(street, houseNumber) {
+  if (!wSession.ok) throw new Error('Keine Session');
+  const url = replaceQ(wSession.submitUrl,
+    'street=' + encodeURIComponent(street) + '&hausnummer=' + encodeURIComponent(houseNumber));
+  const res  = await proxyFetch(url);
   const html = await res.text();
-  const idMatch = html.match(/kamm=(\d+)/);
-  return idMatch ? idMatch[1] : null;
-}
-
-// ── Waste Type Metadata ───────────────────────────────────────────────────────
-
-function wasteInfo(rawType) {
-  const t = rawType.replace(/^Leerung\s+/, '').trim();
-  if (t === 'Restabfall')
-    return { name: 'Restabfall',    emoji: '🗑️', color: '#8E8E93', bg: 'rgba(142,142,147,0.14)' };
-  if (t === 'Bio-Tonne' || t === 'Biotonne')
-    return { name: 'Bio-Tonne',     emoji: '🌱', color: '#34C759', bg: 'rgba(52,199,89,0.14)'   };
-  if (t === 'Gelbe Tonne' || t === 'Gelbe Säcke')
-    return { name: 'Gelbe Tonne',   emoji: '♻️', color: '#C49A00', bg: 'rgba(255,214,10,0.18)'  };
-  if (t === 'Blaue Tonne' || t === 'Papiertonne')
-    return { name: 'Blaue Tonne',   emoji: '📄', color: '#007AFF', bg: 'rgba(0,122,255,0.12)'  };
-  // fallback
-  return   { name: t || 'Unbekannt', emoji: '🚮', color: '#8E8E93', bg: 'rgba(142,142,147,0.10)' };
+  const m    = html.match(/kamm=(\d+)/) || html.match(/STANDORT[=:](\d+)/i);
+  return m ? m[1] : null;
 }
 
 // ── iCal Parser ───────────────────────────────────────────────────────────────
-
 function parseICal(text) {
   const events = [];
   const lines  = text.replace(/\r\n|\r/g, '\n').split('\n');
-  let inEvent = false;
-  let cur     = {};
-
+  let inEvent = false, cur = {};
   for (const raw of lines) {
     const line = raw.trim();
     if (line === 'BEGIN:VEVENT') { inEvent = true; cur = {}; continue; }
     if (line === 'END:VEVENT')   { if (inEvent) events.push({...cur}); inEvent = false; continue; }
     if (!inEvent) continue;
-
-    if (line.startsWith('SUMMARY:')) {
-      cur.summary = line.slice(8);
-    } else if (line.startsWith('DTSTART')) {
+    if (line.startsWith('SUMMARY:')) cur.summary = line.slice(8);
+    else if (line.startsWith('DTSTART')) {
       const val = line.includes(':') ? line.split(':').slice(1).join(':') : line;
       const m   = val.match(/(\d{4})(\d{2})(\d{2})/);
-      if (m) cur.date = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+      if (m) cur.date = new Date(+m[1], +m[2]-1, +m[3]);
     }
   }
-
-  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const today = new Date(); today.setHours(0,0,0,0);
   const result = [];
-
   for (const ev of events) {
     if (!ev.date || ev.date < today) continue;
     const types = ev.summary ? ev.summary.split(',').map(s => s.trim()) : [''];
     for (const t of types) result.push({ date: ev.date, type: t });
   }
-
-  result.sort((a, b) => a.date - b.date);
+  result.sort((a,b) => a.date - b.date);
   return result;
 }
 
-// ── Date Formatting ─────────────────────────────────────────────────────────
+// ── Waste Metadata ────────────────────────────────────────────────────────────
+function wasteInfo(rawType) {
+  const t = rawType.replace(/^Leerung\s+/, '').trim();
+  if (t === 'Restabfall')                         return { name:'Restabfall',  emoji:'🗑️', color:'#8E8E93', bg:'rgba(142,142,147,0.14)' };
+  if (t === 'Bio-Tonne' || t === 'Biotonne')      return { name:'Bio-Tonne',   emoji:'🌱', color:'#34C759', bg:'rgba(52,199,89,0.14)'   };
+  if (t === 'Gelbe Tonne' || t === 'Gelbe Säcke') return { name:'Gelbe Tonne', emoji:'♻️', color:'#C49A00', bg:'rgba(255,214,10,0.18)'  };
+  if (t === 'Blaue Tonne' || t === 'Papiertonne') return { name:'Blaue Tonne', emoji:'📄', color:'#007AFF', bg:'rgba(0,122,255,0.12)'   };
+  return { name: t || 'Unbekannt', emoji:'🚮', color:'#8E8E93', bg:'rgba(142,142,147,0.10)' };
+}
 
+// ── Date Helpers ──────────────────────────────────────────────────────────────
 function daysUntil(date) {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  return Math.round((date - today) / 86_400_000);
+  const today = new Date(); today.setHours(0,0,0,0);
+  return Math.round((date - today) / 86400000);
 }
+const fmtDate  = new Intl.DateTimeFormat('de-DE', { weekday:'short', day:'2-digit', month:'2-digit', year:'numeric' });
+const fmtMonth = new Intl.DateTimeFormat('de-DE', { month:'long', year:'numeric' });
 
-const fmtDate  = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
-const fmtMonth = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' });
-
-// ── Network ───────────────────────────────────────────────────────────────────
-
-async function fetchWithProxy(url) {
-  for (const makeUrl of PROXIES) {
-    try {
-      const r = await fetch(makeUrl(url), { signal: AbortSignal.timeout(10_000) });
-      if (r.ok) return r;
-    } catch { /* try next proxy */ }
-  }
-  throw new Error('Alle Proxies fehlgeschlagen');
-}
-
-// ── Data Loading ──────────────────────────────────────────────────────────────
-
-let lastLoadTime = 0;
-
-async function loadEntries(addr, force = false) {
+// ── iCal Loading ──────────────────────────────────────────────────────────────
+async function loadEntries(addr) {
   if (!addr) return;
-  isLoading = true;
-  loadError = null;
+  isLoading = true; loadError = null;
   renderTermine();
-
-  const today  = new Date();
-  const pad    = n => String(n).padStart(2, '0');
-  const von    = `${pad(today.getDate())}.${pad(today.getMonth() + 1)}.${today.getFullYear()}`;
-  const bis    = `31.12.${today.getFullYear()}`;
-  const icalUrl = `https://stadtplan.dresden.de/project/cardo3Apps/IDU_DDStadtplan/abfall/ical.ashx` +
-                  `?STANDORT=${addr.standortId}&DATUM_VON=${von}&DATUM_BIS=${bis}`;
-
+  const today = new Date();
+  const pad   = n => String(n).padStart(2,'0');
+  const von   = `${pad(today.getDate())}.${pad(today.getMonth()+1)}.${today.getFullYear()}`;
+  const bis   = `31.12.${today.getFullYear()}`;
+  const url   = `https://stadtplan.dresden.de/project/cardo3Apps/IDU_DDStadtplan/abfall/ical.ashx` +
+                `?STANDORT=${addr.standortId}&DATUM_VON=${von}&DATUM_BIS=${bis}`;
   try {
-    const r    = await fetchWithProxy(icalUrl);
-    const text = await r.text();
-    entries  = parseICal(text);
+    const r  = await proxyFetch(url);
+    entries  = parseICal(await r.text());
     loadError = null;
   } catch (err) {
-    loadError = err.message;
-    entries   = [];
+    loadError = err.message; entries = [];
   }
-
-  isLoading    = false;
-  lastLoadTime = Date.now();
+  isLoading = false; lastLoadTime = Date.now();
   renderTermine();
 }
 
-// ── Renderers ──────────────────────────────────────────────────────────────────
-
+// ── Renderers ─────────────────────────────────────────────────────────────────
 function renderTermine() {
   const body = document.getElementById('termine-body');
   if (!body) return;
-
   const addr = addresses.find(a => a.id === activeAddressId);
-
-  // Update title + picker button
-  const titleEl  = document.getElementById('termine-title');
-  const pickerBtn = document.getElementById('addr-picker-btn');
-  if (titleEl) {
-    titleEl.textContent = addr ? displayName(addr) : 'Abfuhrtermine';
-  }
-  if (pickerBtn) {
-    pickerBtn.style.display = addresses.length > 1 ? '' : 'none';
-  }
+  document.getElementById('termine-title').textContent = addr ? displayName(addr) : 'Abfuhrtermine';
+  const pb = document.getElementById('addr-picker-btn');
+  if (pb) pb.style.display = addresses.length > 1 ? '' : 'none';
 
   if (!addr) {
-    body.innerHTML = `
-      <div class="state-box">
-        <div class="state-icon">📍</div>
-        <div class="state-title">Keine Adresse</div>
-        <div class="state-desc">Füge unter »Adressen« deine erste Adresse hinzu.</div>
-      </div>`;
+    body.innerHTML = `<div class="state-box"><div class="state-icon">📍</div>
+      <div class="state-title">Keine Adresse</div>
+      <div class="state-desc">Füge unter »Adressen« deine erste Adresse hinzu.</div></div>`;
     return;
   }
-
-  if (isLoading) {
-    body.innerHTML = `<div class="state-box"><div class="spinner"></div></div>`;
-    return;
-  }
-
+  if (isLoading) { body.innerHTML = `<div class="state-box"><div class="spinner"></div></div>`; return; }
   if (loadError) {
-    body.innerHTML = `
-      <div class="state-box">
-        <div class="state-icon">⚠️</div>
-        <div class="state-title">Fehler beim Laden</div>
-        <div class="state-desc">${loadError}<br><br>Bitte Internetverbindung prüfen.</div>
-      </div>`;
+    body.innerHTML = `<div class="state-box"><div class="state-icon">⚠️</div>
+      <div class="state-title">Fehler beim Laden</div>
+      <div class="state-desc">${loadError}</div></div>`;
     return;
   }
-
   if (entries.length === 0) {
-    body.innerHTML = `
-      <div class="state-box">
-        <div class="state-icon">✅</div>
-        <div class="state-title">Keine Termine</div>
-        <div class="state-desc">Keine anstehenden Abfuhrtermine gefunden.</div>
-      </div>`;
+    body.innerHTML = `<div class="state-box"><div class="state-icon">✅</div>
+      <div class="state-title">Keine Termine</div>
+      <div class="state-desc">Keine anstehenden Abfuhrtermine gefunden.</div></div>`;
     return;
   }
-
-  // Group by month
   const groups = new Map();
-  for (const entry of entries) {
-    const key = fmtMonth.format(entry.date);
+  for (const e of entries) {
+    const key = fmtMonth.format(e.date);
     if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(entry);
+    groups.get(key).push(e);
   }
-
   let html = '';
   for (const [month, evts] of groups) {
     html += `<div class="section"><div class="section-label">${month}</div><div class="card">`;
     for (const e of evts) {
       const info = wasteInfo(e.type);
       const d    = daysUntil(e.date);
-      const dateStr = fmtDate.format(e.date);
       const urgentClass = d <= 1 ? ' urgent' : '';
       const urgentLabel = d === 0 ? ' — Heute!' : d === 1 ? ' — Morgen!' : d <= 3 ? ` — in ${d} Tagen` : '';
-
-      html += `
-        <div class="entry-row">
-          <div class="waste-icon" style="background:${info.bg}">${info.emoji}</div>
-          <div class="entry-info">
-            <div class="entry-name" style="color:${info.color}">${info.name}</div>
-            <div class="entry-date${urgentClass}">${dateStr}${urgentLabel}</div>
-          </div>
-        </div>`;
+      html += `<div class="entry-row">
+        <div class="waste-icon" style="background:${info.bg}">${info.emoji}</div>
+        <div class="entry-info">
+          <div class="entry-name" style="color:${info.color}">${info.name}</div>
+          <div class="entry-date${urgentClass}">${fmtDate.format(e.date)}${urgentLabel}</div>
+        </div></div>`;
     }
     html += `</div></div>`;
   }
-  html += '<div style="height:20px"></div>';
-  body.innerHTML = html;
+  body.innerHTML = html + '<div style="height:20px"></div>';
 }
 
 function renderAdressen() {
   const body = document.getElementById('adressen-body');
   if (!body) return;
-
   const sorted = sortedAddresses();
-
   if (sorted.length === 0) {
-    body.innerHTML = `
-      <div class="state-box">
-        <div class="state-icon">🏠</div>
-        <div class="state-title">Noch keine Adressen</div>
-        <div class="state-desc">Tippe auf »+ Neu«, um deine erste Abfall-Adresse hinzuzufügen.</div>
-      </div>`;
+    body.innerHTML = `<div class="state-box"><div class="state-icon">🏠</div>
+      <div class="state-title">Noch keine Adressen</div>
+      <div class="state-desc">Tippe auf »+ Neu«, um deine erste Adresse hinzuzufügen.</div></div>`;
     return;
   }
-
   let html = '<div class="section"><div class="card">';
   for (const addr of sorted) {
-    const name    = displayName(addr);
-    const sub     = addr.label ? `${addr.strasse} ${addr.hausnummer} · ID ${addr.standortId}` : `ID ${addr.standortId}`;
-    const checked = addr.id === activeAddressId;
-    html += `
-      <div class="addr-row" onclick="selectAddress('${addr.id}')">
-        <div class="addr-info">
-          <div class="addr-name">${name}</div>
-          <div class="addr-sub">${sub}</div>
-        </div>
-        ${checked ? '<span class="addr-check">✓</span>' : ''}
-        <button class="addr-delete" onclick="event.stopPropagation();deleteAddress('${addr.id}')" title="Löschen">&times;</button>
-      </div>`;
+    const sub = addr.strasse ? `${addr.strasse} ${addr.hausnummer}` : `ID ${addr.standortId}`;
+    html += `<div class="addr-row" onclick="selectAddress('${addr.id}')">
+      <div class="addr-info">
+        <div class="addr-name">${displayName(addr)}</div>
+        <div class="addr-sub">${sub}</div>
+      </div>
+      ${addr.id === activeAddressId ? '<span class="addr-check">✓</span>' : ''}
+      <button class="addr-delete" onclick="event.stopPropagation();deleteAddress('${addr.id}')">&times;</button>
+    </div>`;
   }
-  html += '</div></div><div style="height:20px"></div>';
-  body.innerHTML = html;
+  body.innerHTML = html + '</div></div><div style="height:20px"></div>';
 }
 
 function renderEinstellungen() {
@@ -969,314 +639,235 @@ function renderEinstellungen() {
   if (!body) return;
   const addr = addresses.find(a => a.id === activeAddressId);
   body.innerHTML = `
-    <div class="section">
-      <div class="section-label">Aktive Adresse</div>
-      <div class="card">
-        <div class="info-row">
-          <span class="info-key">Name</span>
-          <span class="info-val">${addr ? displayName(addr) : '—'}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-key">STANDORT-ID</span>
-          <span class="info-val">${addr ? addr.standortId : '—'}</span>
-        </div>
-      </div>
-    </div>
-    <div class="section">
-      <div class="section-label">App</div>
-      <div class="card">
-        <div class="info-row">
-          <span class="info-key">Version</span>
-          <span class="info-val">1.0</span>
-        </div>
-        <div class="info-row">
-          <span class="info-key">Datenquelle</span>
-          <span class="info-val">stadtplan.dresden.de</span>
-        </div>
-      </div>
-    </div>
-    <a href="impressum.html" style="
-      display: block;
-      text-align: center;
-      margin-top: 32px;
-      color: #999;
-      font-size: 13px;
-      text-decoration: none;
-    ">Impressum & Datenschutz</a>
+    <div class="section"><div class="section-label">Aktive Adresse</div><div class="card">
+      <div class="info-row"><span class="info-key">Name</span>
+        <span class="info-val">${addr ? displayName(addr) : '—'}</span></div>
+      <div class="info-row"><span class="info-key">STANDORT-ID</span>
+        <span class="info-val">${addr ? addr.standortId : '—'}</span></div>
+    </div></div>
+    <div class="section"><div class="section-label">App</div><div class="card">
+      <div class="info-row"><span class="info-key">Version</span><span class="info-val">1.2</span></div>
+      <div class="info-row"><span class="info-key">Datenquelle</span><span class="info-val">stadtplan.dresden.de</span></div>
+    </div></div>
+    <a href="impressum.html" style="display:block;text-align:center;margin-top:32px;color:#999;font-size:13px;text-decoration:none">
+      Impressum & Datenschutz</a>
     <div style="height:20px"></div>`;
 }
 
 // ── Address Management ────────────────────────────────────────────────────────
-
-function extractId(urlOrId) {
-  const m = String(urlOrId).match(/STANDORT[=:]?(\d+)/i);
-  const val = m ? m[1] : String(urlOrId).replace(/\D/g, '');
-  if (val) {
-    const el = document.getElementById('f-standort');
-    if (el && document.activeElement !== el) el.value = val;
-  }
-  return val;
-}
-
 function selectAddress(id) {
-  activeAddressId = id;
-  persist();
-  closeAddrPicker();
-  renderAdressen();
-  renderEinstellungen();
-  const addr = addresses.find(a => a.id === id);
-  loadEntries(addr);
+  activeAddressId = id; persist();
+  closeAddrPicker(); renderAdressen(); renderEinstellungen();
+  loadEntries(addresses.find(a => a.id === id));
   switchTab('termine');
 }
 
 function deleteAddress(id) {
+  if (!confirm('Adresse löschen?')) return;
   addresses = addresses.filter(a => a.id !== id);
-  if (activeAddressId === id) {
-    activeAddressId = addresses[0]?.id ?? null;
-    entries    = [];
-    loadError  = null;
-  }
-  persist();
-  renderAdressen();
-  renderTermine();
-  renderEinstellungen();
+  if (activeAddressId === id) { activeAddressId = addresses[0]?.id ?? null; entries = []; loadError = null; }
+  persist(); renderAdressen(); renderTermine(); renderEinstellungen();
 }
 
-// ── Tab Switching ───────────────────────────────────────────────────────────
-
+// ── Tab Switching ─────────────────────────────────────────────────────────────
 function switchTab(name) {
   document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  const view = document.getElementById(`tab-${name}`);
-  const btn  = document.getElementById(`tabbtn-${name}`);
-  if (view) view.classList.add('active');
-  if (btn)  btn.classList.add('active');
-
-  if (name === 'adressen')     renderAdressen();
+  document.getElementById(`tab-${name}`)?.classList.add('active');
+  document.getElementById(`tabbtn-${name}`)?.classList.add('active');
+  if (name === 'adressen')      renderAdressen();
   if (name === 'einstellungen') renderEinstellungen();
 }
 
-// ── Address Flow ──────────────────────────────────────────────────────────────
-
-let currentStep = 'street';
-let selectedStreet = '';
-let selectedHnr = '';
-let standortId = '';
-
+// ── Sheet ─────────────────────────────────────────────────────────────────────
 async function openSheet() {
-  const bd = document.getElementById('sheet-backdrop');
-  if (bd) bd.classList.add('open');
-  currentStep = 'street';
-  selectedStreet = '';
-  selectedHnr = '';
-  standortId = '';
+  currentStep = 'street'; selectedStreet = ''; selectedHnr = '';
+  document.getElementById('sheet-backdrop')?.classList.add('open');
   updateSteps();
-  await prepareWicketTemplates();
+
+  // Reset inputs
+  ['f-street-input','f-label'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const hs = document.getElementById('f-hnr-select');
+  if (hs) hs.innerHTML = '<option value="">Hausnummer auswählen...</option>';
+  document.getElementById('street-dropdown').style.display = 'none';
+  setBtnReady('btn-next-street', false);
+  setStatus('');
+
+  // Load fresh Wicket session via proxy
+  setStatus('Verbinde mit Dresden...');
+  const ok = await refreshWicketSession();
+  setStatus(ok ? '' : '⚠️ Verbindung fehlgeschlagen – bitte erneut versuchen.');
   document.getElementById('f-street-input')?.focus();
 }
 
 function closeSheet() {
-  const bd = document.getElementById('sheet-backdrop');
-  if (bd) bd.classList.remove('open');
-  currentStep = 'street';
-  selectedStreet = '';
-  selectedHnr = '';
-  standortId = '';
-  // Clear all inputs
-  ['f-street-input', 'f-hnr-select', 'f-label'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-  document.getElementById('street-dropdown').style.display = 'none';
-  document.getElementById('addr-preview').textContent = '';
-}
-
-function hideStreetDropdown() {
-  const dropdown = document.getElementById('street-dropdown');
-  if (dropdown) dropdown.style.display = 'none';
-}
-
-function updateSteps() {
-  document.querySelectorAll('.form-step').forEach(step => step.classList.remove('active'));
-  document.getElementById(`step-${currentStep}`).classList.add('active');
-}
-
-document.addEventListener('click', event => {
-  const dropdown = document.getElementById('street-dropdown');
-  const input = document.getElementById('f-street-input');
-  if (!dropdown || !input) return;
-  if (event.target instanceof Element && (dropdown.contains(event.target) || input.contains(event.target))) {
-    return;
-  }
-  dropdown.style.display = 'none';
-});
-
-function nextStep() {
-  if (currentStep === 'street' && selectedStreet) {
-    currentStep = 'hnr';
-    loadHouseNumbers();
-  } else if (currentStep === 'hnr' && selectedHnr) {
-    currentStep = 'save';
-    updatePreview();
-  }
-  updateSteps();
-}
-
-function prevStep() {
-  if (currentStep === 'hnr') {
-    currentStep = 'street';
-  } else if (currentStep === 'save') {
-    currentStep = 'hnr';
-  }
-  updateSteps();
-}
-
-async function onStreetInput(value) {
-  const dropdown = document.getElementById('street-dropdown');
-  const btn = document.getElementById('btn-next-street');
-  if (value.length < 2) {
-    dropdown.style.display = 'none';
-    btn.disabled = true;
-    selectedStreet = '';
-    return;
-  }
-  try {
-    const streets = await fetchStreets(value);
-    if (streets.length > 0) {
-      dropdown.innerHTML = streets.map(s => `<div class="dropdown-item" onclick="selectStreet('${s.replace(/'/g, "\\'")}')">${s}</div>`).join('');
-      dropdown.style.display = 'block';
-    } else {
-      dropdown.style.display = 'none';
-    }
-  } catch (e) {
-    dropdown.style.display = 'none';
-  }
-}
-
-function selectStreet(street) {
-  selectedStreet = street;
-  document.getElementById('f-street-input').value = street;
-  document.getElementById('street-dropdown').style.display = 'none';
-  document.getElementById('btn-next-street').disabled = false;
-}
-
-async function loadHouseNumbers() {
-  const select = document.getElementById('f-hnr-select');
-  const btn = document.getElementById('btn-next-hnr');
-  select.innerHTML = '<option value="">Lade Hausnummern...</option>';
-  btn.disabled = true;
-  try {
-    const hnrs = await fetchHouseNumbers(selectedStreet);
-    select.innerHTML = '<option value="">Hausnummer auswählen...</option>' + hnrs.map(h => `<option value="${h}">${h}</option>`).join('');
-  } catch (e) {
-    console.warn('House number fetch failed:', e);
-    select.innerHTML = '<option value="">Fehler beim Laden</option>';
-  }
-}
-
-function onHnrSelect(value) {
-  selectedHnr = value;
-  document.getElementById('btn-next-hnr').disabled = !value;
-}
-
-function updatePreview() {
-  document.getElementById('addr-preview').textContent = `${selectedStreet} ${selectedHnr}`;
-}
-
-async function saveNewAddress() {
-  const labelEl = document.getElementById('f-label');
-  const label = labelEl?.value.trim() || '';
-  
-  // Submit to get standortId
-  try {
-    standortId = await submitAddress(selectedStreet, selectedHnr);
-    if (!standortId) throw new Error('Keine Standort-ID gefunden');
-  } catch (e) {
-    alert('Fehler beim Ermitteln der Standort-ID. Bitte versuche es erneut.');
-    return;
-  }
-  
-  const addr = { id: uid(), label, strasse: selectedStreet, hausnummer: selectedHnr, standortId, version: 2 };
-  addresses.push(addr);
-  if (!activeAddressId) activeAddressId = addr.id;
-  persist();
-  closeSheet();
-  renderAdressen();
-  if (activeAddressId === addr.id) loadEntries(addr);
-  else renderTermine();
-}
-
-// ── Reload ────────────────────────────────────────────────────────────────────
-
-function reloadEntries() {
-  const addr = addresses.find(a => a.id === activeAddressId);
-  if (addr) loadEntries(addr);
-}
-
-// ── Address Picker Dropdown ──────────────────────────────────────────────
-
-function toggleAddrPicker(event) {
-  pickerOpen ? closeAddrPicker() : openAddrPicker(event);
-}
-
-function openAddrPicker(event) {
-  const picker = document.getElementById('addr-picker');
-  if (!picker) return;
-  const btn    = event?.currentTarget;
-  const rect   = btn?.getBoundingClientRect() ?? { bottom: 60, right: window.innerWidth };
-  picker.style.top     = `${rect.bottom + 4}px`;
-  picker.style.display = '';
-  picker.innerHTML = sortedAddresses().map(a => `
-    <div class="addr-picker-item ${a.id === activeAddressId ? 'selected' : ''}" onclick="selectAddress('${a.id}')">
-      ${displayName(a)}
-      ${a.id === activeAddressId ? '<span class="picker-check">✓</span>' : ''}
-    </div>`).join('');
-  pickerOpen = true;
-  requestAnimationFrame(() => document.addEventListener('click', closeAddrPicker, { once: true }));
-}
-
-function closeAddrPicker() {
-  const picker = document.getElementById('addr-picker');
-  if (picker) picker.style.display = 'none';
-  pickerOpen = false;
-}
-
-// ── Sheet ───────────────────────────────────────────────────────────────────────
-
-function openSheet() {
-  const bd = document.getElementById('sheet-backdrop');
-  if (bd) bd.classList.add('open');
-  document.getElementById('f-name')?.focus();
-}
-
-function closeSheet() {
-  const bd = document.getElementById('sheet-backdrop');
-  if (bd) bd.classList.remove('open');
-  ['f-name','f-street','f-hnr','f-standort','f-ical-url'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
+  document.getElementById('sheet-backdrop')?.classList.remove('open');
 }
 
 function onBackdropClick(e) {
   if (e.target === e.currentTarget) closeSheet();
 }
 
-// ── Visibility-based Auto-refresh ─────────────────────────────────────
+function setStatus(msg) {
+  const el = document.getElementById('save-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
 
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && Date.now() - lastLoadTime > 30 * 60 * 1000) {
-    reloadEntries();
+function setBtnReady(id, ready) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  btn.disabled = !ready;
+  if (ready) btn.classList.add('ready');
+  else       btn.classList.remove('ready');
+}
+
+function updateSteps() {
+  document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+  document.getElementById(`step-${currentStep}`)?.classList.add('active');
+}
+
+function nextStep() {
+  if (currentStep === 'street' && selectedStreet) {
+    currentStep = 'hnr'; updateSteps(); loadHouseNumbers();
+  } else if (currentStep === 'hnr' && selectedHnr) {
+    currentStep = 'save';
+    document.getElementById('addr-preview').textContent = `${selectedStreet} ${selectedHnr}`;
+    updateSteps();
   }
+}
+
+function prevStep() {
+  if      (currentStep === 'hnr')  currentStep = 'street';
+  else if (currentStep === 'save') currentStep = 'hnr';
+  updateSteps();
+}
+
+// Close dropdown on outside click
+document.addEventListener('click', e => {
+  const dd  = document.getElementById('street-dropdown');
+  const inp = document.getElementById('f-street-input');
+  if (!dd || !inp) return;
+  if (!dd.contains(e.target) && !inp.contains(e.target)) dd.style.display = 'none';
 });
 
-// ── Boot ─────────────────────────────────────────────────────────────────────
+async function onStreetInput(value) {
+  const dd = document.getElementById('street-dropdown');
+  selectedStreet = '';
+  setBtnReady('btn-next-street', false);
+  if (value.length < 2) { dd.style.display = 'none'; return; }
+  try {
+    const streets = await fetchStreets(value);
+    if (streets.length > 0) {
+      dd.innerHTML = streets.map(s =>
+        `<div class="dropdown-item" onclick="selectStreet('${s.replace(/'/g,"\\'")}')"> ${s}</div>`
+      ).join('');
+      dd.style.display = 'block';
+    } else {
+      dd.style.display = 'none';
+    }
+  } catch { dd.style.display = 'none'; }
+}
 
+function selectStreet(street) {
+  selectedStreet = street;
+  document.getElementById('f-street-input').value = street;
+  document.getElementById('street-dropdown').style.display = 'none';
+  setBtnReady('btn-next-street', true);
+}
+
+async function loadHouseNumbers() {
+  const select = document.getElementById('f-hnr-select');
+  setBtnReady('btn-next-hnr', false);
+  select.innerHTML = '<option value="">Lade Hausnummern...</option>';
+  try {
+    const hnrs = await fetchHouseNumbers(selectedStreet);
+    select.innerHTML = hnrs.length > 0
+      ? '<option value="">Hausnummer auswählen...</option>' + hnrs.map(h => `<option value="${h}">${h}</option>`).join('')
+      : '<option value="">Keine Hausnummern gefunden</option>';
+  } catch {
+    select.innerHTML = '<option value="">Fehler beim Laden</option>';
+  }
+}
+
+function onHnrSelect(value) {
+  selectedHnr = value;
+  setBtnReady('btn-next-hnr', !!value);
+}
+
+async function saveNewAddress() {
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true;
+  setStatus('Ermittle Standort-ID...');
+
+  let standortId = null;
+  try { standortId = await fetchStandortId(selectedStreet, selectedHnr); } catch { /* ignore */ }
+
+  if (!standortId) {
+    const link = prompt(
+      'Standort-ID konnte nicht automatisch ermittelt werden.\n\n' +
+      'Bitte öffne:\nhttps://www.dresden.de/apps_ext/AbfallApp/wastebins\n\n' +
+      'Suche deine Adresse → „Jetzt finden" → Rechtsklick auf iCal-Link → „Link kopieren" und hier einfügen:'
+    );
+    if (!link) { btn.disabled = false; setStatus(''); return; }
+    const m = String(link).match(/kamm=(\d+)|STANDORT=(\d+)/i);
+    standortId = m ? (m[1] || m[2]) : null;
+  }
+
+  if (!standortId) {
+    setStatus('⚠️ Keine Standort-ID gefunden. Bitte erneut versuchen.');
+    btn.disabled = false;
+    return;
+  }
+
+  const label = document.getElementById('f-label')?.value.trim() || '';
+  const addr  = { id: uid(), label, strasse: selectedStreet, hausnummer: selectedHnr, standortId, version: 2 };
+  addresses.push(addr);
+  if (!activeAddressId) activeAddressId = addr.id;
+  persist(); closeSheet(); renderAdressen();
+  if (activeAddressId === addr.id) loadEntries(addr); else renderTermine();
+}
+
+// ── Reload ────────────────────────────────────────────────────────────────────
+function reloadEntries() {
+  loadEntries(addresses.find(a => a.id === activeAddressId));
+}
+
+// ── Address Picker ────────────────────────────────────────────────────────────
+function toggleAddrPicker(e) { pickerOpen ? closeAddrPicker() : openAddrPicker(e); }
+
+function openAddrPicker(e) {
+  const picker = document.getElementById('addr-picker');
+  if (!picker) return;
+  const rect = e?.currentTarget?.getBoundingClientRect() ?? { bottom: 60 };
+  picker.style.top     = (rect.bottom + 4) + 'px';
+  picker.style.display = '';
+  picker.innerHTML = sortedAddresses().map(a => `
+    <div class="addr-picker-item ${a.id === activeAddressId ? 'selected' : ''}" onclick="selectAddress('${a.id}')">
+      ${displayName(a)} ${a.id === activeAddressId ? '<span>✓</span>' : ''}
+    </div>`).join('');
+  pickerOpen = true;
+  requestAnimationFrame(() => document.addEventListener('click', closeAddrPicker, { once: true }));
+}
+
+function closeAddrPicker() {
+  document.getElementById('addr-picker').style.display = 'none';
+  pickerOpen = false;
+}
+
+// ── Auto-refresh on app resume ────────────────────────────────────────────────
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && Date.now() - lastLoadTime > 30 * 60 * 1000)
+    reloadEntries();
+});
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
 migrateOldData();
 hydrate();
 renderTermine();
-const sel = addresses.find(a => a.id === activeAddressId);
-if (sel) loadEntries(sel);
+const _sel = addresses.find(a => a.id === activeAddressId);
+if (_sel) loadEntries(_sel);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () =>
