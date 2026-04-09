@@ -697,6 +697,11 @@ function parseList(html) {
     .map(li => li.getAttribute('textvalue')).filter(Boolean).slice(0, 8);
 }
 
+function appendQueryParam(url, key, value) {
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}${key}=${encodeURIComponent(value)}`;
+}
+
 async function fetchStreets(query) {
   await prepareWicketTemplates();
   if (!autocompleteUrlTemplate) throw new Error('Wicket-Autocomplete-URL konnte nicht geladen werden');
@@ -710,11 +715,7 @@ async function fetchHouseNumbers(street) {
   await prepareWicketTemplates();
   if (!hnrUrlTemplate) throw new Error('Wicket-Hausnummer-URL konnte nicht geladen werden');
   let url = buildWicketUrl(hnrUrlTemplate);
-  if (url.includes('q=')) {
-    url = url.replace('q=', `street=${encodeURIComponent(street)}&q=`);
-  } else {
-    url += `&street=${encodeURIComponent(street)}`;
-  }
+  url = appendQueryParam(url, 'street', street);
   const res = await fetchWithProxy(url);
   const html = await res.text();
   return parseList(html);
