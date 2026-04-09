@@ -356,6 +356,19 @@ async function proxyFetch(url, opts = {}) {
   throw new Error('Alle Verbindungsversuche fehlgeschlagen');
 }
 
+async function wicketFetch(url) {
+  for (const make of PROXIES) {
+    try {
+      const r = await fetch(make(url), {
+        signal: AbortSignal.timeout(12000),
+        headers: { 'Wicket-Ajax': 'true', 'Wicket-Ajax-BaseURL': 'wastebins' }
+      });
+      if (r.ok) return r;
+    } catch { }
+  }
+  throw new Error('Verbindung fehlgeschlagen');
+}
+
 // ── State ─────────────────────────────────────────────────────────────────────
 let addresses       = [];
 let activeAddressId = null;
@@ -452,7 +465,7 @@ function replaceQ(url, newParam) {
 function parseItems(html) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const out = [];
-  doc.querySelectorAll('li').forEach(li => {
+  doc.querySelectorAll('li[textvalue]').forEach(li => {
     const v = li.getAttribute('textvalue') || li.textContent.trim();
     if (v) out.push(v);
   });
@@ -462,7 +475,7 @@ function parseItems(html) {
 async function fetchStreets(query) {
   if (!wSession.ok) throw new Error('Keine Session');
   const url = replaceQ(wSession.autocompleteUrl, 'q=' + encodeURIComponent(query));
-  const res = await proxyFetch(url);
+  const res = await wicketFetch(url);
   return parseItems(await res.text());
 }
 
@@ -470,10 +483,10 @@ async function fetchHouseNumbers(street) {
   if (!wSession.ok) throw new Error('Keine Session');
   // Step 1: set street in Wicket server state (.0- endpoint)
   const setUrl = replaceQ(wSession.submitUrl, 'street=' + encodeURIComponent(street));
-  await proxyFetch(setUrl);
+  await wicketFetch(setUrl);
   // Step 2: fetch house numbers (.1- endpoint)
   const hnrUrl = replaceQ(wSession.hnrUrl, 'street=' + encodeURIComponent(street));
-  const res    = await proxyFetch(hnrUrl);
+  const res    = await wicketFetch(hnrUrl);
   return parseItems(await res.text());
 }
 
@@ -481,7 +494,7 @@ async function fetchStandortId(street, houseNumber) {
   if (!wSession.ok) throw new Error('Keine Session');
   const url = replaceQ(wSession.submitUrl,
     'street=' + encodeURIComponent(street) + '&hausnummer=' + encodeURIComponent(houseNumber));
-  const res  = await proxyFetch(url);
+  const res  = await wicketFetch(url);
   const html = await res.text();
   const m    = html.match(/kamm=(\d+)/) || html.match(/STANDORT[=:](\d+)/i);
   return m ? m[1] : null;
