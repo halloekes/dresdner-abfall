@@ -657,9 +657,19 @@ function buildWicketUrl(template, replacement) {
   if (!template) return '';
   let url = template.replace('./wastebins', 'wastebins');
   if (replacement) {
-    url = url.replace('q=no', replacement);
+    if (url.includes('q=no')) {
+      url = url.replace('q=no', replacement);
+    } else if (url.includes('?')) {
+      url = `${url}&${replacement}`;
+    } else {
+      url = `${url}?${replacement}`;
+    }
+  } else {
+    url = url.replace(/([?&])q=no(&?)/, (match, prefix, suffix) => {
+      if (suffix === '&') return prefix;
+      return '';
+    }).replace(/[?&]$/, '');
   }
-  url = url.replace('&q=no', '').replace('?q=no', '');
   return 'https://www.dresden.de/apps_ext/AbfallApp/' + url;
 }
 
@@ -668,7 +678,7 @@ async function prepareWicketTemplates() {
   try {
     const res = await fetchWithProxy('https://www.dresden.de/apps_ext/AbfallApp/wastebins');
     const html = await res.text();
-    const matches = [...html.matchAll(/"u":"(\.\/wastebins[^\"]+searchForm-street[^\"]+)"/g)];
+    const matches = [...html.matchAll(/"u":"(\.\/wastebins[^\"]*searchForm-street[^\"]*)"/g)];
     for (const m of matches) {
       const url = m[1];
       if (url.includes('.2-searchForm-street')) autocompleteUrlTemplate = url;
