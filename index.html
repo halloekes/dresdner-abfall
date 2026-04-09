@@ -128,12 +128,13 @@
       background: var(--gray); color: white; border: none; border-radius: 12px;
       padding: 13px 24px; font-size: 17px; font-weight: 600; cursor: pointer;
       -webkit-tap-highlight-color: transparent; min-height: 44px; width: 100%;
-      transition: background 0.2s, opacity 0.15s;
+      transition: background 0.25s;
     }
-    .btn-primary:not(:disabled) { background: var(--blue); }
+    .btn-primary:not(:disabled)       { background: var(--blue); }
     .btn-primary.ready:not(:disabled) { background: var(--green); }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-primary:active:not(:disabled) { opacity: 0.75; }
+    .btn-primary:disabled             { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary:active:not(:disabled){ opacity: 0.75; }
+
     .btn-secondary { background: var(--gray); color: white; border: none; border-radius: 12px;
       padding: 13px 24px; font-size: 17px; font-weight: 600; cursor: pointer;
       -webkit-tap-highlight-color: transparent; min-height: 44px; }
@@ -162,7 +163,7 @@
       gap: 2px; border: none; background: none; }
     .tab-icon  { font-size: 24px; }
     .tab-label { font-size: 10px; font-weight: 500; }
-    .tab-btn.active { color: var(--blue); }
+    .tab-btn.active       { color: var(--blue); }
     .tab-btn:not(.active) { color: var(--gray); }
 
     .reload-btn { background: none; border: none; color: var(--blue); font-size: 20px;
@@ -337,6 +338,24 @@
 <script>
 'use strict';
 
+// ── CORS Proxy ────────────────────────────────────────────────────────────────
+// dresden.de blocks cross-origin requests. We route everything through a proxy.
+// The Wicket jsessionid lives in the URL path, so the proxy forwards it correctly.
+const PROXIES = [
+  u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+];
+
+async function proxyFetch(url, opts = {}) {
+  for (const make of PROXIES) {
+    try {
+      const r = await fetch(make(url), { signal: AbortSignal.timeout(12000), ...opts });
+      if (r.ok) return r;
+    } catch { /* try next proxy */ }
+  }
+  throw new Error('Alle Verbindungsversuche fehlgeschlagen');
+}
+
 // ── State ─────────────────────────────────────────────────────────────────────
 let addresses       = [];
 let activeAddressId = null;
@@ -346,7 +365,7 @@ let loadError       = null;
 let pickerOpen      = false;
 let lastLoadTime    = 0;
 
-// Wicket session – must be refreshed each time the sheet opens
+// Wicket session URLs – refreshed each time the sheet opens
 let wSession = { autocompleteUrl: '', hnrUrl: '', submitUrl: '', ok: false };
 
 // Form state
@@ -395,27 +414,26 @@ function sortedAddresses() {
 }
 
 // ── Dresden Wicket API ────────────────────────────────────────────────────────
-// Apache Wicket uses session-scoped component IDs embedded in the page HTML.
-// We fetch the page fresh to get valid URLs, then call them directly with
-// credentials:'include' so the browser sends the session cookie automatically.
+// Apache Wicket embeds session-scoped component URLs in the page HTML.
+// We fetch the page via proxy to get these URLs (which include the jsessionid),
+// then call those URLs also via proxy – the jsessionid in the path is enough
+// for Wicket to maintain session state without cookies.
 
 async function refreshWicketSession() {
   wSession = { autocompleteUrl: '', hnrUrl: '', submitUrl: '', ok: false };
   try {
-    const res = await fetch('https://www.dresden.de/apps_ext/AbfallApp/wastebins', {
-      credentials: 'include', cache: 'no-store'
-    });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const res  = await proxyFetch('https://www.dresden.de/apps_ext/AbfallApp/wastebins');
     const html = await res.text();
 
     const re = /"u":"(\.\/wastebins[^"]+searchForm-street[^"]*)"/g;
     let m;
     while ((m = re.exec(html)) !== null) {
       const rel = m[1];
+      // Build absolute URL (keep jsessionid in path)
       const abs = 'https://www.dresden.de/apps_ext/AbfallApp/' + rel.replace(/^\.\//, '');
       if (rel.includes('.2-searchForm-street')) wSession.autocompleteUrl = abs;
-      if (rel.includes('.1-searchForm-street')) wSession.hnrUrl = abs;
-      if (rel.includes('.0-searchForm-street')) wSession.submitUrl = abs;
+      if (rel.includes('.1-searchForm-street')) wSession.hnrUrl          = abs;
+      if (rel.includes('.0-searchForm-street')) wSession.submitUrl        = abs;
     }
     wSession.ok = !!(wSession.autocompleteUrl && wSession.hnrUrl && wSession.submitUrl);
   } catch (e) {
@@ -424,54 +442,48 @@ async function refreshWicketSession() {
   return wSession.ok;
 }
 
-// Replace the Wicket placeholder q=no with our actual parameter
+// Replace the Wicket placeholder &q=no with the real parameter
 function replaceQ(url, newParam) {
-  // Handle both ?q=no and &q=no
-  if (url.includes('?q=no')) return url.replace('?q=no', '?' + newParam);
   if (url.includes('&q=no')) return url.replace('&q=no', '&' + newParam);
+  if (url.includes('?q=no')) return url.replace('?q=no', '?' + newParam);
   return url + '&' + newParam;
 }
 
 function parseItems(html) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
-  const items = [];
+  const out = [];
   doc.querySelectorAll('li').forEach(li => {
     const v = li.getAttribute('textvalue') || li.textContent.trim();
-    if (v) items.push(v);
+    if (v) out.push(v);
   });
-  return [...new Set(items)].slice(0, 12);
-}
-
-async function drFetch(url) {
-  return fetch(url, { credentials: 'include', cache: 'no-store' });
+  return [...new Set(out)].slice(0, 12);
 }
 
 async function fetchStreets(query) {
   if (!wSession.ok) throw new Error('Keine Session');
   const url = replaceQ(wSession.autocompleteUrl, 'q=' + encodeURIComponent(query));
-  const res = await drFetch(url);
+  const res = await proxyFetch(url);
   return parseItems(await res.text());
 }
 
 async function fetchHouseNumbers(street) {
   if (!wSession.ok) throw new Error('Keine Session');
-  // Step 1: register the street in server-side Wicket state (.0- endpoint)
+  // Step 1: set street in Wicket server state (.0- endpoint)
   const setUrl = replaceQ(wSession.submitUrl, 'street=' + encodeURIComponent(street));
-  await drFetch(setUrl);
+  await proxyFetch(setUrl);
   // Step 2: fetch house numbers (.1- endpoint)
   const hnrUrl = replaceQ(wSession.hnrUrl, 'street=' + encodeURIComponent(street));
-  const res = await drFetch(hnrUrl);
+  const res    = await proxyFetch(hnrUrl);
   return parseItems(await res.text());
 }
 
 async function fetchStandortId(street, houseNumber) {
   if (!wSession.ok) throw new Error('Keine Session');
-  // Submit the complete form to trigger the result page
   const url = replaceQ(wSession.submitUrl,
     'street=' + encodeURIComponent(street) + '&hausnummer=' + encodeURIComponent(houseNumber));
-  const res = await drFetch(url);
+  const res  = await proxyFetch(url);
   const html = await res.text();
-  const m = html.match(/kamm=(\d+)/) || html.match(/STANDORT[=:](\d+)/i);
+  const m    = html.match(/kamm=(\d+)/) || html.match(/STANDORT[=:](\d+)/i);
   return m ? m[1] : null;
 }
 
@@ -488,7 +500,7 @@ function parseICal(text) {
     if (line.startsWith('SUMMARY:')) cur.summary = line.slice(8);
     else if (line.startsWith('DTSTART')) {
       const val = line.includes(':') ? line.split(':').slice(1).join(':') : line;
-      const m = val.match(/(\d{4})(\d{2})(\d{2})/);
+      const m   = val.match(/(\d{4})(\d{2})(\d{2})/);
       if (m) cur.date = new Date(+m[1], +m[2]-1, +m[3]);
     }
   }
@@ -509,7 +521,7 @@ function wasteInfo(rawType) {
   if (t === 'Restabfall')                         return { name:'Restabfall',  emoji:'🗑️', color:'#8E8E93', bg:'rgba(142,142,147,0.14)' };
   if (t === 'Bio-Tonne' || t === 'Biotonne')      return { name:'Bio-Tonne',   emoji:'🌱', color:'#34C759', bg:'rgba(52,199,89,0.14)'   };
   if (t === 'Gelbe Tonne' || t === 'Gelbe Säcke') return { name:'Gelbe Tonne', emoji:'♻️', color:'#C49A00', bg:'rgba(255,214,10,0.18)'  };
-  if (t === 'Blaue Tonne' || t === 'Papiertonne') return { name:'Blaue Tonne', emoji:'📄', color:'#007AFF', bg:'rgba(0,122,255,0.12)'  };
+  if (t === 'Blaue Tonne' || t === 'Papiertonne') return { name:'Blaue Tonne', emoji:'📄', color:'#007AFF', bg:'rgba(0,122,255,0.12)'   };
   return { name: t || 'Unbekannt', emoji:'🚮', color:'#8E8E93', bg:'rgba(142,142,147,0.10)' };
 }
 
@@ -521,23 +533,7 @@ function daysUntil(date) {
 const fmtDate  = new Intl.DateTimeFormat('de-DE', { weekday:'short', day:'2-digit', month:'2-digit', year:'numeric' });
 const fmtMonth = new Intl.DateTimeFormat('de-DE', { month:'long', year:'numeric' });
 
-// ── Network (iCal uses proxy because stadtplan.dresden.de blocks CORS) ────────
-const PROXIES = [
-  url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-];
-
-async function fetchWithProxy(url) {
-  for (const make of PROXIES) {
-    try {
-      const r = await fetch(make(url), { signal: AbortSignal.timeout(10000) });
-      if (r.ok) return r;
-    } catch { /* try next */ }
-  }
-  throw new Error('Verbindung fehlgeschlagen');
-}
-
-// ── Data Loading ──────────────────────────────────────────────────────────────
+// ── iCal Loading ──────────────────────────────────────────────────────────────
 async function loadEntries(addr) {
   if (!addr) return;
   isLoading = true; loadError = null;
@@ -549,7 +545,7 @@ async function loadEntries(addr) {
   const url   = `https://stadtplan.dresden.de/project/cardo3Apps/IDU_DDStadtplan/abfall/ical.ashx` +
                 `?STANDORT=${addr.standortId}&DATUM_VON=${von}&DATUM_BIS=${bis}`;
   try {
-    const r  = await fetchWithProxy(url);
+    const r  = await proxyFetch(url);
     entries  = parseICal(await r.text());
     loadError = null;
   } catch (err) {
@@ -598,7 +594,7 @@ function renderTermine() {
     html += `<div class="section"><div class="section-label">${month}</div><div class="card">`;
     for (const e of evts) {
       const info = wasteInfo(e.type);
-      const d = daysUntil(e.date);
+      const d    = daysUntil(e.date);
       const urgentClass = d <= 1 ? ' urgent' : '';
       const urgentLabel = d === 0 ? ' — Heute!' : d === 1 ? ' — Morgen!' : d <= 3 ? ` — in ${d} Tagen` : '';
       html += `<div class="entry-row">
@@ -644,14 +640,17 @@ function renderEinstellungen() {
   const addr = addresses.find(a => a.id === activeAddressId);
   body.innerHTML = `
     <div class="section"><div class="section-label">Aktive Adresse</div><div class="card">
-      <div class="info-row"><span class="info-key">Name</span><span class="info-val">${addr ? displayName(addr) : '—'}</span></div>
-      <div class="info-row"><span class="info-key">STANDORT-ID</span><span class="info-val">${addr ? addr.standortId : '—'}</span></div>
+      <div class="info-row"><span class="info-key">Name</span>
+        <span class="info-val">${addr ? displayName(addr) : '—'}</span></div>
+      <div class="info-row"><span class="info-key">STANDORT-ID</span>
+        <span class="info-val">${addr ? addr.standortId : '—'}</span></div>
     </div></div>
     <div class="section"><div class="section-label">App</div><div class="card">
-      <div class="info-row"><span class="info-key">Version</span><span class="info-val">1.1</span></div>
+      <div class="info-row"><span class="info-key">Version</span><span class="info-val">1.2</span></div>
       <div class="info-row"><span class="info-key">Datenquelle</span><span class="info-val">stadtplan.dresden.de</span></div>
     </div></div>
-    <a href="impressum.html" style="display:block;text-align:center;margin-top:32px;color:#999;font-size:13px;text-decoration:none">Impressum & Datenschutz</a>
+    <a href="impressum.html" style="display:block;text-align:center;margin-top:32px;color:#999;font-size:13px;text-decoration:none">
+      Impressum & Datenschutz</a>
     <div style="height:20px"></div>`;
 }
 
@@ -666,10 +665,7 @@ function selectAddress(id) {
 function deleteAddress(id) {
   if (!confirm('Adresse löschen?')) return;
   addresses = addresses.filter(a => a.id !== id);
-  if (activeAddressId === id) {
-    activeAddressId = addresses[0]?.id ?? null;
-    entries = []; loadError = null;
-  }
+  if (activeAddressId === id) { activeAddressId = addresses[0]?.id ?? null; entries = []; loadError = null; }
   persist(); renderAdressen(); renderTermine(); renderEinstellungen();
 }
 
@@ -679,7 +675,7 @@ function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById(`tab-${name}`)?.classList.add('active');
   document.getElementById(`tabbtn-${name}`)?.classList.add('active');
-  if (name === 'adressen') renderAdressen();
+  if (name === 'adressen')      renderAdressen();
   if (name === 'einstellungen') renderEinstellungen();
 }
 
@@ -689,21 +685,19 @@ async function openSheet() {
   document.getElementById('sheet-backdrop')?.classList.add('open');
   updateSteps();
 
-  // Reset form
-  const si = document.getElementById('f-street-input');
+  // Reset inputs
+  ['f-street-input','f-label'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const hs = document.getElementById('f-hnr-select');
-  const lb = document.getElementById('f-label');
-  if (si) si.value = '';
   if (hs) hs.innerHTML = '<option value="">Hausnummer auswählen...</option>';
-  if (lb) lb.value = '';
   document.getElementById('street-dropdown').style.display = 'none';
-  setStreetBtn(false);
+  setBtnReady('btn-next-street', false);
+  setStatus('');
 
-  // Refresh Wicket session
+  // Load fresh Wicket session via proxy
   setStatus('Verbinde mit Dresden...');
   const ok = await refreshWicketSession();
   setStatus(ok ? '' : '⚠️ Verbindung fehlgeschlagen – bitte erneut versuchen.');
-  si?.focus();
+  document.getElementById('f-street-input')?.focus();
 }
 
 function closeSheet() {
@@ -721,18 +715,12 @@ function setStatus(msg) {
   el.style.display = msg ? 'block' : 'none';
 }
 
-function setStreetBtn(ready) {
-  const btn = document.getElementById('btn-next-street');
+function setBtnReady(id, ready) {
+  const btn = document.getElementById(id);
   if (!btn) return;
   btn.disabled = !ready;
-  if (ready) btn.classList.add('ready'); else btn.classList.remove('ready');
-}
-
-function setHnrBtn(ready) {
-  const btn = document.getElementById('btn-next-hnr');
-  if (!btn) return;
-  btn.disabled = !ready;
-  if (ready) btn.classList.add('ready'); else btn.classList.remove('ready');
+  if (ready) btn.classList.add('ready');
+  else       btn.classList.remove('ready');
 }
 
 function updateSteps() {
@@ -742,9 +730,7 @@ function updateSteps() {
 
 function nextStep() {
   if (currentStep === 'street' && selectedStreet) {
-    currentStep = 'hnr';
-    updateSteps();
-    loadHouseNumbers();
+    currentStep = 'hnr'; updateSteps(); loadHouseNumbers();
   } else if (currentStep === 'hnr' && selectedHnr) {
     currentStep = 'save';
     document.getElementById('addr-preview').textContent = `${selectedStreet} ${selectedHnr}`;
@@ -753,7 +739,7 @@ function nextStep() {
 }
 
 function prevStep() {
-  if (currentStep === 'hnr') currentStep = 'street';
+  if      (currentStep === 'hnr')  currentStep = 'street';
   else if (currentStep === 'save') currentStep = 'hnr';
   updateSteps();
 }
@@ -769,7 +755,7 @@ document.addEventListener('click', e => {
 async function onStreetInput(value) {
   const dd = document.getElementById('street-dropdown');
   selectedStreet = '';
-  setStreetBtn(false);
+  setBtnReady('btn-next-street', false);
   if (value.length < 2) { dd.style.display = 'none'; return; }
   try {
     const streets = await fetchStreets(value);
@@ -788,21 +774,18 @@ function selectStreet(street) {
   selectedStreet = street;
   document.getElementById('f-street-input').value = street;
   document.getElementById('street-dropdown').style.display = 'none';
-  setStreetBtn(true);
+  setBtnReady('btn-next-street', true);
 }
 
 async function loadHouseNumbers() {
   const select = document.getElementById('f-hnr-select');
-  setHnrBtn(false);
+  setBtnReady('btn-next-hnr', false);
   select.innerHTML = '<option value="">Lade Hausnummern...</option>';
   try {
     const hnrs = await fetchHouseNumbers(selectedStreet);
-    if (hnrs.length > 0) {
-      select.innerHTML = '<option value="">Hausnummer auswählen...</option>' +
-        hnrs.map(h => `<option value="${h}">${h}</option>`).join('');
-    } else {
-      select.innerHTML = '<option value="">Keine Hausnummern gefunden</option>';
-    }
+    select.innerHTML = hnrs.length > 0
+      ? '<option value="">Hausnummer auswählen...</option>' + hnrs.map(h => `<option value="${h}">${h}</option>`).join('')
+      : '<option value="">Keine Hausnummern gefunden</option>';
   } catch {
     select.innerHTML = '<option value="">Fehler beim Laden</option>';
   }
@@ -810,7 +793,7 @@ async function loadHouseNumbers() {
 
 function onHnrSelect(value) {
   selectedHnr = value;
-  setHnrBtn(!!value);
+  setBtnReady('btn-next-hnr', !!value);
 }
 
 async function saveNewAddress() {
@@ -842,11 +825,8 @@ async function saveNewAddress() {
   const addr  = { id: uid(), label, strasse: selectedStreet, hausnummer: selectedHnr, standortId, version: 2 };
   addresses.push(addr);
   if (!activeAddressId) activeAddressId = addr.id;
-  persist();
-  closeSheet();
-  renderAdressen();
-  if (activeAddressId === addr.id) loadEntries(addr);
-  else renderTermine();
+  persist(); closeSheet(); renderAdressen();
+  if (activeAddressId === addr.id) loadEntries(addr); else renderTermine();
 }
 
 // ── Reload ────────────────────────────────────────────────────────────────────
@@ -861,7 +841,7 @@ function openAddrPicker(e) {
   const picker = document.getElementById('addr-picker');
   if (!picker) return;
   const rect = e?.currentTarget?.getBoundingClientRect() ?? { bottom: 60 };
-  picker.style.top = (rect.bottom + 4) + 'px';
+  picker.style.top     = (rect.bottom + 4) + 'px';
   picker.style.display = '';
   picker.innerHTML = sortedAddresses().map(a => `
     <div class="addr-picker-item ${a.id === activeAddressId ? 'selected' : ''}" onclick="selectAddress('${a.id}')">
@@ -876,7 +856,7 @@ function closeAddrPicker() {
   pickerOpen = false;
 }
 
-// ── Auto-refresh ──────────────────────────────────────────────────────────────
+// ── Auto-refresh on app resume ────────────────────────────────────────────────
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && Date.now() - lastLoadTime > 30 * 60 * 1000)
     reloadEntries();
@@ -886,8 +866,8 @@ document.addEventListener('visibilitychange', () => {
 migrateOldData();
 hydrate();
 renderTermine();
-const sel = addresses.find(a => a.id === activeAddressId);
-if (sel) loadEntries(sel);
+const _sel = addresses.find(a => a.id === activeAddressId);
+if (_sel) loadEntries(_sel);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () =>
