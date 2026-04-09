@@ -1,7 +1,17 @@
-const CACHE_NAME = 'dresdner-abfall-v3';
+const CACHE_NAME = 'dresdner-abfall-v4';
+const CACHE_URLS = [
+  'index.html',
+  'impressum.html',
+  'manifest.json',
+  'sw.js'
+];
 
 self.addEventListener('install', event => {
-  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(CACHE_URLS);
+    }).then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', event => {
