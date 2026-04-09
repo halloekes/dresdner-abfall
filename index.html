@@ -642,54 +642,79 @@ function sortedAddresses() {
 
 // ── Dresden Abfall API ────────────────────────────────────────────────────────
 
-let wicketIds = { street: '0-1.2', hnr: '0-1.1', submit: '0-1.0' };
+let autocompleteUrlTemplate = '';
+let hnrUrlTemplate = '';
+let submitUrlTemplate = '';
+let templatesLoaded = false;
 
-async function initWicketIds() {
+function buildWicketUrl(template, replacement) {
+  if (!template) return '';
+  let url = template.replace('./wastebins', 'wastebins');
+  if (replacement) {
+    url = url.replace('q=no', replacement);
+  }
+  url = url.replace('&q=no', '').replace('?q=no', '');
+  return 'https://www.dresden.de/apps_ext/AbfallApp/' + url;
+}
+
+async function prepareWicketTemplates() {
+  if (templatesLoaded) return;
   try {
     const res = await fetchWithProxy('https://www.dresden.de/apps_ext/AbfallApp/wastebins');
     const html = await res.text();
-    const match = html.match(/wastebins\?(\d+-\d+)\.(\d+)-searchForm-street/);
-    if (match) {
-      const base = match[1];
-      wicketIds = {
-        street: `${base}.2`,
-        hnr: `${base}.1`,
-        submit: `${base}.0`
-      };
+    const matches = [...html.matchAll(/"u":"(\.\/wastebins[^\"]+searchForm-street[^\"]+)"/g)];
+    for (const m of matches) {
+      const url = m[1];
+      if (url.includes('.2-searchForm-street')) autocompleteUrlTemplate = url;
+      if (url.includes('.1-searchForm-street')) hnrUrlTemplate = url;
+      if (url.includes('.0-searchForm-street')) submitUrlTemplate = url;
     }
+    templatesLoaded = !!autocompleteUrlTemplate && !!hnrUrlTemplate && !!submitUrlTemplate;
   } catch (e) {
-    console.warn('Failed to init wicket IDs:', e);
+    console.warn('Failed to prepare Wicket templates:', e);
   }
 }
 
-async function fetchStreets(query) {
-  const params = `?${wicketIds.street}-searchForm-street&q=${encodeURIComponent(query)}&_=${Date.now()}`;
-  const res = await fetchWithProxy('https://www.dresden.de/apps_ext/AbfallApp/wastebins' + params);
-  const html = await res.text();
+function parseList(html) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
-  return [...doc.querySelectorAll('li[textvalue]')].map(li => li.getAttribute('textvalue')).slice(0, 8);
+  return Array.from(doc.querySelectorAll('li[textvalue]'))
+    .map(li => li.getAttribute('textvalue')).filter(Boolean).slice(0, 8);
+}
+
+async function fetchStreets(query) {
+  await prepareWicketTemplates();
+  if (!autocompleteUrlTemplate) throw new Error('Wicket-Autocomplete-URL konnte nicht geladen werden');
+  const url = buildWicketUrl(autocompleteUrlTemplate, 'q=' + encodeURIComponent(query));
+  const res = await fetchWithProxy(url);
+  const html = await res.text();
+  return parseList(html);
 }
 
 async function fetchHouseNumbers(street) {
-  const params = `?${wicketIds.hnr}-searchForm-street&street=${encodeURIComponent(street)}&_=${Date.now()}`;
-  const res = await fetchWithProxy('https://www.dresden.de/apps_ext/AbfallApp/wastebins' + params);
+  await prepareWicketTemplates();
+  if (!hnrUrlTemplate) throw new Error('Wicket-Hausnummer-URL konnte nicht geladen werden');
+  let url = buildWicketUrl(hnrUrlTemplate);
+  if (url.includes('q=')) {
+    url = url.replace('q=', `street=${encodeURIComponent(street)}&q=`);
+  } else {
+    url += `&street=${encodeURIComponent(street)}`;
+  }
+  const res = await fetchWithProxy(url);
   const html = await res.text();
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  return [...doc.querySelectorAll('li[textvalue]')].map(li => li.getAttribute('textvalue'));
+  return parseList(html);
 }
 
 async function submitAddress(street, houseNumber) {
-  // First set street
-  await fetchWithProxy(`https://www.dresden.de/apps_ext/AbfallApp/wastebins?${wicketIds.submit}-searchForm-street&street=${encodeURIComponent(street)}&_=${Date.now()}`);
-  // Then set hnr and submit
-  const formData = new FormData();
-  formData.append(`${wicketIds.hnr}-searchForm-street`, houseNumber);
-  formData.append(`${wicketIds.street}-searchForm`, 'Jetzt finden');
-  const res = await fetch('https://www.dresden.de/apps_ext/AbfallApp/wastebins', {
-    method: 'POST',
-    credentials: 'include',
-    body: formData
-  });
+  await prepareWicketTemplates();
+  if (!submitUrlTemplate) throw new Error('Wicket-Submit-URL konnte nicht geladen werden');
+  let url = buildWicketUrl(submitUrlTemplate);
+  if (url.includes('q=')) {
+    url = url.replace('q=', `street=${encodeURIComponent(street)}&q=`);
+  } else {
+    url += `&street=${encodeURIComponent(street)}`;
+  }
+  url += `&hausnummer=${encodeURIComponent(houseNumber)}`;
+  const res = await fetchWithProxy(url);
   const html = await res.text();
   const idMatch = html.match(/kamm=(\d+)/);
   return idMatch ? idMatch[1] : null;
@@ -1021,7 +1046,7 @@ let selectedStreet = '';
 let selectedHnr = '';
 let standortId = '';
 
-function openSheet() {
+async function openSheet() {
   const bd = document.getElementById('sheet-backdrop');
   if (bd) bd.classList.add('open');
   currentStep = 'street';
@@ -1029,6 +1054,7 @@ function openSheet() {
   selectedHnr = '';
   standortId = '';
   updateSteps();
+  await prepareWicketTemplates();
   document.getElementById('f-street-input')?.focus();
 }
 
@@ -1217,7 +1243,6 @@ document.addEventListener('visibilitychange', () => {
 
 migrateOldData();
 hydrate();
-initWicketIds();
 renderTermine();
 const sel = addresses.find(a => a.id === activeAddressId);
 if (sel) loadEntries(sel);
