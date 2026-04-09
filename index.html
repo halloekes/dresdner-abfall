@@ -186,6 +186,51 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    /* ── Form Steps ──────────────────────────────────────────── */
+    .form-step { display: none; }
+    .form-step.active { display: block; }
+
+    /* ── Dropdown ────────────────────────────────────────────── */
+    .dropdown {
+      background: var(--surface);
+      border-radius: 12px;
+      border: 0.5px solid var(--border);
+      margin-top: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .dropdown-item {
+      padding: 12px 16px;
+      border-bottom: 0.5px solid var(--border);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+    }
+    .dropdown-item:last-child { border-bottom: none; }
+    .dropdown-item:hover { background: rgba(0,122,255,0.1); }
+
+    /* ── Buttons ─────────────────────────────────────────────── */
+    .btn-primary, .btn-secondary {
+      background: var(--blue);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      min-height: 44px;
+    }
+    .btn-secondary { background: var(--gray); }
+    .btn-primary:disabled, .btn-secondary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     /* ── Info Row (Einstellungen) ─────────────────────────────── */
     .info-row {
       display: flex;
@@ -444,66 +489,64 @@
       <div class="sheet-title">Neue Adresse</div>
       <div style="width:80px"></div>
     </div>
-    <div class="sheet-body">
+    <div class="sheet-body" id="sheet-body">
 
-      <div class="form-section">
-        <div class="form-label">Name (optional)</div>
-        <div class="form-card">
-          <div class="form-row">
-            <input type="text" id="f-name" placeholder="z.B. Zuhause, Büro" autocomplete="off">
+      <!-- Stufe 1: Straße -->
+      <div id="step-street" class="form-step active">
+        <div class="form-section">
+          <div class="form-label">Straße eingeben</div>
+          <div class="form-card">
+            <div class="form-row">
+              <input type="text" id="f-street-input" placeholder="z.B. Schandauer Straße" autocomplete="off" oninput="onStreetInput(this.value)">
+            </div>
           </div>
+          <div id="street-dropdown" class="dropdown" style="display:none"></div>
+        </div>
+        <div class="form-section" style="margin-top:28px">
+          <button class="btn-secondary" id="btn-next-street" onclick="nextStep()" disabled>Weiter</button>
         </div>
       </div>
 
-      <div class="form-section">
-        <div class="form-label">Adresse</div>
-        <div class="form-card">
-          <div class="form-row">
-            <label>Straße</label>
-            <input type="text" id="f-street" placeholder="Schillerstraße" autocomplete="off">
+      <!-- Stufe 2: Hausnummer -->
+      <div id="step-hnr" class="form-step">
+        <div class="form-section">
+          <div class="form-label">Hausnummer wählen</div>
+          <div class="form-card">
+            <div class="form-row">
+              <select id="f-hnr-select" onchange="onHnrSelect(this.value)">
+                <option value="">Hausnummer auswählen...</option>
+              </select>
+            </div>
           </div>
-          <div class="form-row">
-            <label>Hausnummer</label>
-            <input type="text" id="f-hnr" placeholder="12a" autocomplete="off">
-          </div>
+        </div>
+        <div class="form-section" style="margin-top:28px">
+          <button class="btn-secondary" onclick="prevStep()">Zurück</button>
+          <button class="btn-primary" id="btn-next-hnr" onclick="nextStep()" disabled style="margin-left:8px">Weiter</button>
         </div>
       </div>
 
-      <div class="form-section">
-        <div class="form-label">STANDORT-ID</div>
-        <div class="form-card">
-          <div class="form-row">
-            <label>ID</label>
-            <input type="number" id="f-standort" placeholder="z.B. 123456" autocomplete="off">
+      <!-- Stufe 3: Speichern -->
+      <div id="step-save" class="form-step">
+        <div class="form-section">
+          <div class="form-label">Adresse bestätigen</div>
+          <div class="form-card">
+            <div class="form-row">
+              <div id="addr-preview" style="font-size:16px;color:var(--label);padding:8px 0"></div>
+            </div>
           </div>
         </div>
-        <div class="form-hint">
-          So findest du deine STANDORT-ID:<br>
-          1. Gehe zur
-          <a href="https://www.dresden.de/apps_ext/AbfallApp/wastebins" target="_blank">
-            Abfall-Seite der Stadt Dresden
-          </a><br>
-          2. Suche deine Adresse und klicke „Jetzt finden"<br>
-          3. Rechtsklick (oder langer Tipp) auf den <strong>iCal-Link</strong> → „Link kopieren"<br>
-          4. Füge den kopierten Link unten ein – die ID wird automatisch erkannt.
-        </div>
-      </div>
-
-      <div class="form-section">
-        <div class="form-label">Oder: iCal-Link einfügen</div>
-        <div class="form-card">
-          <div class="form-row">
-            <input type="url" id="f-ical-url"
-                   placeholder="https://stadtplan.dresden.de/…?STANDORT=…"
-                   autocomplete="off"
-                   oninput="extractId(this.value)">
+        <div class="form-section">
+          <div class="form-label">Name (optional)</div>
+          <div class="form-card">
+            <div class="form-row">
+              <input type="text" id="f-label" placeholder="z.B. Zuhause, Büro" autocomplete="off">
+            </div>
           </div>
         </div>
-        <div class="form-hint">Die STANDORT-ID wird automatisch aus dem Link extrahiert.</div>
-      </div>
-
-      <div class="form-section" style="margin-top:28px">
-        <button class="btn-primary" id="save-btn" onclick="saveAddress()">Adresse speichern</button>
+        <div class="form-section" style="margin-top:28px">
+          <button class="btn-secondary" onclick="prevStep()">Zurück</button>
+          <button class="btn-primary" id="btn-save" onclick="saveNewAddress()" style="margin-left:8px">Adresse speichern</button>
+        </div>
       </div>
 
     </div>
@@ -524,8 +567,8 @@ const PROXIES = [
 
 // ── State ────────────────────────────────────────────────────────────────────
 
-let addresses    = [];   // [{ id, customName, street, houseNumber, standortId }]
-let selectedId   = null;
+let addresses    = [];   // [{ id, label, strasse, hausnummer, standortId, version }]
+let activeAddressId = null;
 let entries      = [];   // [{ date, wasteType }]
 let isLoading    = false;
 let loadError    = null;
@@ -534,22 +577,53 @@ let pickerOpen   = false;
 // ── Persistence ──────────────────────────────────────────────────────────────
 
 function persist() {
-  localStorage.setItem('dresdner_abfall_addresses', JSON.stringify(addresses));
-  localStorage.setItem('dresdner_abfall_selected',  selectedId || '');
+  localStorage.setItem('addresses', JSON.stringify(addresses));
+  localStorage.setItem('activeAddressId', activeAddressId || '');
 }
 
 function hydrate() {
   try {
-    addresses  = JSON.parse(localStorage.getItem('dresdner_abfall_addresses') || '[]');
-    selectedId = localStorage.getItem('dresdner_abfall_selected') || null;
+    addresses = JSON.parse(localStorage.getItem('addresses') || '[]');
+    activeAddressId = localStorage.getItem('activeAddressId') || null;
     // Fall back to first address if stored ID is gone
-    if (selectedId && !addresses.find(a => a.id === selectedId)) {
-      selectedId = addresses[0]?.id ?? null;
+    if (activeAddressId && !addresses.find(a => a.id === activeAddressId)) {
+      activeAddressId = addresses[0]?.id ?? null;
     }
-    if (!selectedId && addresses.length > 0) selectedId = addresses[0].id;
+    if (!activeAddressId && addresses.length > 0) activeAddressId = addresses[0].id;
   } catch {
-    addresses  = [];
-    selectedId = null;
+    addresses = [];
+    activeAddressId = null;
+  }
+}
+
+function migrateOldData() {
+  const oldAddresses = localStorage.getItem('dresdner_abfall_addresses');
+  const oldSelected = localStorage.getItem('dresdner_abfall_selected');
+  if (oldAddresses && !localStorage.getItem('addresses')) {
+    const migrated = JSON.parse(oldAddresses).map(a => ({
+      id: a.id,
+      label: a.customName || '',
+      strasse: a.street || '',
+      hausnummer: a.houseNumber || '',
+      standortId: a.standortId,
+      version: 1
+    }));
+    localStorage.setItem('addresses', JSON.stringify(migrated));
+    localStorage.setItem('activeAddressId', oldSelected || migrated[0]?.id || '');
+  }
+  // Also migrate old single address
+  const oldId = localStorage.getItem('standortId');
+  if (oldId && !localStorage.getItem('addresses')) {
+    const migrated = [{
+      id: Date.now().toString(),
+      label: localStorage.getItem('addressName') || '',
+      strasse: '',
+      hausnummer: '',
+      standortId: oldId,
+      version: 1
+    }];
+    localStorage.setItem('addresses', JSON.stringify(migrated));
+    localStorage.setItem('activeAddressId', migrated[0].id);
   }
 }
 
@@ -558,12 +632,67 @@ function hydrate() {
 function uid() { return crypto.randomUUID(); }
 
 function displayName(addr) {
-  return addr.customName || `${addr.street} ${addr.houseNumber}`;
+  return addr.label || `${addr.strasse} ${addr.hausnummer}`;
 }
 
 function sortedAddresses() {
   return [...addresses].sort((a, b) =>
     displayName(a).localeCompare(displayName(b), 'de'));
+}
+
+// ── Dresden Abfall API ────────────────────────────────────────────────────────
+
+let wicketIds = { street: '0-1.2', hnr: '0-1.1', submit: '0-1.0' };
+
+async function initWicketIds() {
+  try {
+    const res = await fetchWithProxy('https://www.dresden.de/apps_ext/AbfallApp/wastebins');
+    const html = await res.text();
+    const match = html.match(/wastebins\?(\d+-\d+)\.(\d+)-searchForm-street/);
+    if (match) {
+      const base = match[1];
+      wicketIds = {
+        street: `${base}.2`,
+        hnr: `${base}.1`,
+        submit: `${base}.0`
+      };
+    }
+  } catch (e) {
+    console.warn('Failed to init wicket IDs:', e);
+  }
+}
+
+async function fetchStreets(query) {
+  const params = `?${wicketIds.street}-searchForm-street&q=${encodeURIComponent(query)}&_=${Date.now()}`;
+  const res = await fetchWithProxy('https://www.dresden.de/apps_ext/AbfallApp/wastebins' + params);
+  const html = await res.text();
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return [...doc.querySelectorAll('li[textvalue]')].map(li => li.getAttribute('textvalue')).slice(0, 8);
+}
+
+async function fetchHouseNumbers(street) {
+  const params = `?${wicketIds.hnr}-searchForm-street&street=${encodeURIComponent(street)}&_=${Date.now()}`;
+  const res = await fetchWithProxy('https://www.dresden.de/apps_ext/AbfallApp/wastebins' + params);
+  const html = await res.text();
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return [...doc.querySelectorAll('li[textvalue]')].map(li => li.getAttribute('textvalue'));
+}
+
+async function submitAddress(street, houseNumber) {
+  // First set street
+  await fetchWithProxy(`https://www.dresden.de/apps_ext/AbfallApp/wastebins?${wicketIds.submit}-searchForm-street&street=${encodeURIComponent(street)}&_=${Date.now()}`);
+  // Then set hnr and submit
+  const formData = new FormData();
+  formData.append(`${wicketIds.hnr}-searchForm-street`, houseNumber);
+  formData.append(`${wicketIds.street}-searchForm`, 'Jetzt finden');
+  const res = await fetch('https://www.dresden.de/apps_ext/AbfallApp/wastebins', {
+    method: 'POST',
+    credentials: 'include',
+    body: formData
+  });
+  const html = await res.text();
+  const idMatch = html.match(/kamm=(\d+)/);
+  return idMatch ? idMatch[1] : null;
 }
 
 // ── Waste Type Metadata ───────────────────────────────────────────────────────
@@ -678,7 +807,7 @@ function renderTermine() {
   const body = document.getElementById('termine-body');
   if (!body) return;
 
-  const addr = addresses.find(a => a.id === selectedId);
+  const addr = addresses.find(a => a.id === activeAddressId);
 
   // Update title + picker button
   const titleEl  = document.getElementById('termine-title');
@@ -777,8 +906,8 @@ function renderAdressen() {
   let html = '<div class="section"><div class="card">';
   for (const addr of sorted) {
     const name    = displayName(addr);
-    const sub     = addr.customName ? `${addr.street} ${addr.houseNumber} · ID ${addr.standortId}` : `ID ${addr.standortId}`;
-    const checked = addr.id === selectedId;
+    const sub     = addr.label ? `${addr.strasse} ${addr.hausnummer} · ID ${addr.standortId}` : `ID ${addr.standortId}`;
+    const checked = addr.id === activeAddressId;
     html += `
       <div class="addr-row" onclick="selectAddress('${addr.id}')">
         <div class="addr-info">
@@ -796,7 +925,7 @@ function renderAdressen() {
 function renderEinstellungen() {
   const body = document.getElementById('einstellungen-body');
   if (!body) return;
-  const addr = addresses.find(a => a.id === selectedId);
+  const addr = addresses.find(a => a.id === activeAddressId);
   body.innerHTML = `
     <div class="section">
       <div class="section-label">Aktive Adresse</div>
@@ -839,39 +968,8 @@ function extractId(urlOrId) {
   return val;
 }
 
-function saveAddress() {
-  const nameEl     = document.getElementById('f-name');
-  const streetEl   = document.getElementById('f-street');
-  const hnrEl      = document.getElementById('f-hnr');
-  const standortEl = document.getElementById('f-standort');
-
-  const customName  = nameEl?.value.trim() || '';
-  const street      = streetEl?.value.trim() || '';
-  const houseNumber = hnrEl?.value.trim() || '';
-  const standortId  = standortEl?.value.trim() || '';
-
-  if (!standortId || standortId.length < 2) {
-    standortEl?.focus();
-    return;
-  }
-
-  if (!customName && (!street || !houseNumber)) {
-    streetEl?.focus();
-    return;
-  }
-
-  const addr = { id: uid(), customName, street, houseNumber, standortId };
-  addresses.push(addr);
-  if (!selectedId) selectedId = addr.id;
-  persist();
-  closeSheet();
-  renderAdressen();
-  if (selectedId === addr.id) loadEntries(addr);
-  else renderTermine();
-}
-
 function selectAddress(id) {
-  selectedId = id;
+  activeAddressId = id;
   persist();
   closeAddrPicker();
   renderAdressen();
@@ -883,8 +981,8 @@ function selectAddress(id) {
 
 function deleteAddress(id) {
   addresses = addresses.filter(a => a.id !== id);
-  if (selectedId === id) {
-    selectedId = addresses[0]?.id ?? null;
+  if (activeAddressId === id) {
+    activeAddressId = addresses[0]?.id ?? null;
     entries    = [];
     loadError  = null;
   }
@@ -908,10 +1006,145 @@ function switchTab(name) {
   if (name === 'einstellungen') renderEinstellungen();
 }
 
+// ── Address Flow ──────────────────────────────────────────────────────────────
+
+let currentStep = 'street';
+let selectedStreet = '';
+let selectedHnr = '';
+let standortId = '';
+
+function openSheet() {
+  const bd = document.getElementById('sheet-backdrop');
+  if (bd) bd.classList.add('open');
+  currentStep = 'street';
+  selectedStreet = '';
+  selectedHnr = '';
+  standortId = '';
+  updateSteps();
+  document.getElementById('f-street-input')?.focus();
+}
+
+function closeSheet() {
+  const bd = document.getElementById('sheet-backdrop');
+  if (bd) bd.classList.remove('open');
+  currentStep = 'street';
+  selectedStreet = '';
+  selectedHnr = '';
+  standortId = '';
+  // Clear all inputs
+  ['f-street-input', 'f-hnr-select', 'f-label'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('street-dropdown').style.display = 'none';
+  document.getElementById('addr-preview').textContent = '';
+}
+
+function updateSteps() {
+  document.querySelectorAll('.form-step').forEach(step => step.classList.remove('active'));
+  document.getElementById(`step-${currentStep}`).classList.add('active');
+}
+
+function nextStep() {
+  if (currentStep === 'street' && selectedStreet) {
+    currentStep = 'hnr';
+    loadHouseNumbers();
+  } else if (currentStep === 'hnr' && selectedHnr) {
+    currentStep = 'save';
+    updatePreview();
+  }
+  updateSteps();
+}
+
+function prevStep() {
+  if (currentStep === 'hnr') {
+    currentStep = 'street';
+  } else if (currentStep === 'save') {
+    currentStep = 'hnr';
+  }
+  updateSteps();
+}
+
+async function onStreetInput(value) {
+  const dropdown = document.getElementById('street-dropdown');
+  const btn = document.getElementById('btn-next-street');
+  if (value.length < 2) {
+    dropdown.style.display = 'none';
+    btn.disabled = true;
+    selectedStreet = '';
+    return;
+  }
+  try {
+    const streets = await fetchStreets(value);
+    if (streets.length > 0) {
+      dropdown.innerHTML = streets.map(s => `<div class="dropdown-item" onclick="selectStreet('${s.replace(/'/g, "\\'")}')">${s}</div>`).join('');
+      dropdown.style.display = '';
+    } else {
+      dropdown.style.display = 'none';
+    }
+  } catch (e) {
+    console.warn('Street fetch failed:', e);
+    dropdown.style.display = 'none';
+  }
+}
+
+function selectStreet(street) {
+  selectedStreet = street;
+  document.getElementById('f-street-input').value = street;
+  document.getElementById('street-dropdown').style.display = 'none';
+  document.getElementById('btn-next-street').disabled = false;
+}
+
+async function loadHouseNumbers() {
+  const select = document.getElementById('f-hnr-select');
+  const btn = document.getElementById('btn-next-hnr');
+  select.innerHTML = '<option value="">Lade Hausnummern...</option>';
+  btn.disabled = true;
+  try {
+    const hnrs = await fetchHouseNumbers(selectedStreet);
+    select.innerHTML = '<option value="">Hausnummer auswählen...</option>' + hnrs.map(h => `<option value="${h}">${h}</option>`).join('');
+  } catch (e) {
+    console.warn('House number fetch failed:', e);
+    select.innerHTML = '<option value="">Fehler beim Laden</option>';
+  }
+}
+
+function onHnrSelect(value) {
+  selectedHnr = value;
+  document.getElementById('btn-next-hnr').disabled = !value;
+}
+
+function updatePreview() {
+  document.getElementById('addr-preview').textContent = `${selectedStreet} ${selectedHnr}`;
+}
+
+async function saveNewAddress() {
+  const labelEl = document.getElementById('f-label');
+  const label = labelEl?.value.trim() || '';
+  
+  // Submit to get standortId
+  try {
+    standortId = await submitAddress(selectedStreet, selectedHnr);
+    if (!standortId) throw new Error('Keine Standort-ID gefunden');
+  } catch (e) {
+    alert('Fehler beim Ermitteln der Standort-ID. Bitte versuche es erneut.');
+    return;
+  }
+  
+  const addr = { id: uid(), label, strasse: selectedStreet, hausnummer: selectedHnr, standortId, version: 2 };
+  addresses.push(addr);
+  if (!activeAddressId) activeAddressId = addr.id;
+  persist();
+  closeSheet();
+  renderAdressen();
+  if (activeAddressId === addr.id) loadEntries(addr);
+  else renderTermine();
+}
+
 // ── Reload ────────────────────────────────────────────────────────────────────
 
 function reloadEntries() {
-  const addr = addresses.find(a => a.id === selectedId);
+  const addr = addresses.find(a => a.id === activeAddressId);
   if (addr) loadEntries(addr);
 }
 
@@ -929,9 +1162,9 @@ function openAddrPicker(event) {
   picker.style.top     = `${rect.bottom + 4}px`;
   picker.style.display = '';
   picker.innerHTML = sortedAddresses().map(a => `
-    <div class="addr-picker-item ${a.id === selectedId ? 'selected' : ''}" onclick="selectAddress('${a.id}')">
+    <div class="addr-picker-item ${a.id === activeAddressId ? 'selected' : ''}" onclick="selectAddress('${a.id}')">
       ${displayName(a)}
-      ${a.id === selectedId ? '<span class="picker-check">✓</span>' : ''}
+      ${a.id === activeAddressId ? '<span class="picker-check">✓</span>' : ''}
     </div>`).join('');
   pickerOpen = true;
   requestAnimationFrame(() => document.addEventListener('click', closeAddrPicker, { once: true }));
@@ -974,9 +1207,11 @@ document.addEventListener('visibilitychange', () => {
 
 // ── Boot ─────────────────────────────────────────────────────────────────────
 
+migrateOldData();
 hydrate();
+initWicketIds();
 renderTermine();
-const sel = addresses.find(a => a.id === selectedId);
+const sel = addresses.find(a => a.id === activeAddressId);
 if (sel) loadEntries(sel);
 
 if ('serviceWorker' in navigator) {
