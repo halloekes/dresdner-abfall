@@ -191,11 +191,17 @@
     .form-step.active { display: block; }
 
     /* ── Dropdown ────────────────────────────────────────────── */
+    .form-section { position: relative; }
     .dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+      z-index: 20;
       background: var(--surface);
       border-radius: 12px;
       border: 0.5px solid var(--border);
-      margin-top: 8px;
+      margin-top: 0;
       max-height: 200px;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
@@ -1074,10 +1080,25 @@ function closeSheet() {
   document.getElementById('addr-preview').textContent = '';
 }
 
+function hideStreetDropdown() {
+  const dropdown = document.getElementById('street-dropdown');
+  if (dropdown) dropdown.style.display = 'none';
+}
+
 function updateSteps() {
   document.querySelectorAll('.form-step').forEach(step => step.classList.remove('active'));
   document.getElementById(`step-${currentStep}`).classList.add('active');
 }
+
+document.addEventListener('click', event => {
+  const dropdown = document.getElementById('street-dropdown');
+  const input = document.getElementById('f-street-input');
+  if (!dropdown || !input) return;
+  if (event.target instanceof Element && (dropdown.contains(event.target) || input.contains(event.target))) {
+    return;
+  }
+  dropdown.style.display = 'none';
+});
 
 function nextStep() {
   if (currentStep === 'street' && selectedStreet) {
@@ -1112,12 +1133,11 @@ async function onStreetInput(value) {
     const streets = await fetchStreets(value);
     if (streets.length > 0) {
       dropdown.innerHTML = streets.map(s => `<div class="dropdown-item" onclick="selectStreet('${s.replace(/'/g, "\\'")}')">${s}</div>`).join('');
-      dropdown.style.display = '';
+      dropdown.style.display = 'block';
     } else {
       dropdown.style.display = 'none';
     }
   } catch (e) {
-    console.warn('Street fetch failed:', e);
     dropdown.style.display = 'none';
   }
 }
