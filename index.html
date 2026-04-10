@@ -210,8 +210,8 @@
       <div class="nav-bar-row">
         <div class="nav-title-large" id="termine-title">Abfuhrtermine</div>
         <div style="display:flex;gap:4px;align-items:center">
-          <button class="reload-btn" onclick="reloadEntries()">↻</button>
-          <button class="btn-text" id="addr-picker-btn" onclick="toggleAddrPicker(event)" style="display:none;font-size:20px">🏠</button>
+          <button class="reload-btn" onclick="reloadEntries()">&#x21bb;</button>
+          <button class="btn-text" id="addr-picker-btn" onclick="toggleAddrPicker(event)" style="display:none;font-size:20px">&#x1F3E0;</button>
         </div>
       </div>
     </div>
@@ -223,7 +223,7 @@
     <div class="nav-bar">
       <div class="nav-bar-row">
         <div class="nav-title-inline">Adressen</div>
-        <button class="btn-text" onclick="openSheet()">＋ Neu</button>
+        <button class="btn-text" onclick="openSheet()">&#xFF0B; Neu</button>
       </div>
     </div>
     <div id="adressen-body" class="content"></div>
@@ -242,13 +242,13 @@
   <!-- TAB BAR -->
   <div class="tab-bar">
     <button class="tab-btn active" id="tabbtn-termine" onclick="switchTab('termine')">
-      <span class="tab-icon">📅</span><span class="tab-label">Termine</span>
+      <span class="tab-icon">&#x1F4C5;</span><span class="tab-label">Termine</span>
     </button>
     <button class="tab-btn" id="tabbtn-adressen" onclick="switchTab('adressen')">
-      <span class="tab-icon">📍</span><span class="tab-label">Adressen</span>
+      <span class="tab-icon">&#x1F4CD;</span><span class="tab-label">Adressen</span>
     </button>
     <button class="tab-btn" id="tabbtn-einstellungen" onclick="switchTab('einstellungen')">
-      <span class="tab-icon">⚙️</span><span class="tab-label">Einstellungen</span>
+      <span class="tab-icon">&#x2699;&#xFE0F;</span><span class="tab-label">Einstellungen</span>
     </button>
   </div>
 </div>
@@ -267,14 +267,14 @@
     </div>
     <div class="sheet-body">
 
-      <!-- Stufe 1: Straße -->
+      <!-- Stufe 1: Stra&szlig;e -->
       <div id="step-street" class="form-step active">
         <div class="form-section">
-          <div class="form-label">Straße eingeben</div>
+          <div class="form-label">Stra&szlig;e eingeben</div>
           <div class="form-card">
             <div class="form-row">
               <input type="text" id="f-street-input"
-                placeholder="z.B. Schandauer Straße"
+                placeholder="z.B. Schandauer Stra&szlig;e"
                 autocomplete="off"
                 oninput="onStreetInput(this.value)">
             </div>
@@ -289,17 +289,17 @@
       <!-- Stufe 2: Hausnummer -->
       <div id="step-hnr" class="form-step">
         <div class="form-section">
-          <div class="form-label">Hausnummer wählen</div>
+          <div class="form-label">Hausnummer w&auml;hlen</div>
           <div class="form-card">
             <div class="form-row">
               <select id="f-hnr-select" onchange="onHnrSelect(this.value)">
-                <option value="">Hausnummer auswählen...</option>
+                <option value="">Hausnummer ausw&auml;hlen...</option>
               </select>
             </div>
           </div>
         </div>
         <div class="form-section" style="margin-top:24px;display:flex;gap:10px">
-          <button class="btn-secondary" onclick="prevStep()">Zurück</button>
+          <button class="btn-secondary" onclick="prevStep()">Zur&uuml;ck</button>
           <button class="btn-primary" id="btn-next-hnr" onclick="nextStep()" disabled style="flex:1;width:auto">Weiter</button>
         </div>
       </div>
@@ -307,7 +307,7 @@
       <!-- Stufe 3: Speichern -->
       <div id="step-save" class="form-step">
         <div class="form-section">
-          <div class="form-label">Adresse bestätigen</div>
+          <div class="form-label">Adresse best&auml;tigen</div>
           <div class="form-card">
             <div class="form-row">
               <div id="addr-preview" style="font-size:16px;color:var(--label);padding:8px 0"></div>
@@ -318,7 +318,7 @@
           <div class="form-label">Name (optional)</div>
           <div class="form-card">
             <div class="form-row">
-              <input type="text" id="f-label" placeholder="z.B. Zuhause, Büro" autocomplete="off">
+              <input type="text" id="f-label" placeholder="z.B. Zuhause, B&uuml;ro" autocomplete="off">
             </div>
           </div>
         </div>
@@ -326,7 +326,7 @@
           <div id="save-status" class="status-msg" style="display:none"></div>
         </div>
         <div class="form-section" style="margin-top:12px;display:flex;gap:10px">
-          <button class="btn-secondary" onclick="prevStep()">Zurück</button>
+          <button class="btn-secondary" onclick="prevStep()">Zur&uuml;ck</button>
           <button class="btn-primary ready" id="btn-save" onclick="saveNewAddress()" style="flex:1;width:auto">Adresse speichern</button>
         </div>
       </div>
@@ -338,35 +338,31 @@
 <script>
 'use strict';
 
-// ── CORS Proxy ────────────────────────────────────────────────────────────────
-// dresden.de blocks cross-origin requests. We route everything through a proxy.
-// The Wicket jsessionid lives in the URL path, so the proxy forwards it correctly.
-const PROXIES = [
-  u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
-  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+// ── API Server ───────────────────────────────────────────────────────────────
+// Our own backend handles the Wicket session with dresden.de and exposes
+// clean JSON endpoints. No more CORS proxies or session juggling in the browser.
+const API_BASE = 'https://dresdner-abfall-api.onrender.com';
+
+// CORS proxy still needed for the iCal download (stadtplan.dresden.de)
+const ICAL_PROXIES = [
+  u => 'https://corsproxy.io/?' + encodeURIComponent(u),
+  u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
 ];
 
-async function proxyFetch(url, opts = {}) {
-  for (const make of PROXIES) {
+async function icalFetch(url) {
+  for (const make of ICAL_PROXIES) {
     try {
-      const r = await fetch(make(url), { signal: AbortSignal.timeout(12000), ...opts });
+      const r = await fetch(make(url), { signal: AbortSignal.timeout(15000) });
       if (r.ok) return r;
     } catch { /* try next proxy */ }
   }
-  throw new Error('Alle Verbindungsversuche fehlgeschlagen');
+  throw new Error('iCal-Daten konnten nicht geladen werden');
 }
 
-async function wicketFetch(url) {
-  for (const make of PROXIES) {
-    try {
-      const r = await fetch(make(url), {
-        signal: AbortSignal.timeout(12000),
-        headers: { 'Wicket-Ajax': 'true', 'Wicket-Ajax-BaseURL': 'wastebins' }
-      });
-      if (r.ok) return r;
-    } catch { }
-  }
-  throw new Error('Verbindung fehlgeschlagen');
+async function apiFetch(path) {
+  const r = await fetch(API_BASE + path, { signal: AbortSignal.timeout(15000) });
+  if (!r.ok) throw new Error('API-Fehler: ' + r.status);
+  return r.json();
 }
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -378,13 +374,12 @@ let loadError       = null;
 let pickerOpen      = false;
 let lastLoadTime    = 0;
 
-// Wicket session URLs – refreshed each time the sheet opens
-let wSession = { autocompleteUrl: '', hnrUrl: '', submitUrl: '', ok: false };
-
 // Form state
-let currentStep    = 'street';
-let selectedStreet = '';
-let selectedHnr    = '';
+let currentStep     = 'street';
+let selectedStreet  = '';
+let selectedHnr     = '';
+let selectedStandortId = null;
+let houseNumberData = []; // [{nr, standortId}] from API
 
 // ── Persistence ───────────────────────────────────────────────────────────────
 function persist() {
@@ -426,78 +421,18 @@ function sortedAddresses() {
   return [...addresses].sort((a, b) => displayName(a).localeCompare(displayName(b), 'de'));
 }
 
-// ── Dresden Wicket API ────────────────────────────────────────────────────────
-// Apache Wicket embeds session-scoped component URLs in the page HTML.
-// We fetch the page via proxy to get these URLs (which include the jsessionid),
-// then call those URLs also via proxy – the jsessionid in the path is enough
-// for Wicket to maintain session state without cookies.
+// ── Dresden API (via our backend) ────────────────────────────────────────────
 
-async function refreshWicketSession() {
-  wSession = { autocompleteUrl: '', hnrUrl: '', submitUrl: '', ok: false };
-  try {
-    const res  = await proxyFetch('https://www.dresden.de/apps_ext/AbfallApp/wastebins');
-    const html = await res.text();
-
-    const re = /"u":"(\.\/wastebins[^"]+searchForm-street[^"]*)"/g;
-    let m;
-    while ((m = re.exec(html)) !== null) {
-      const rel = m[1];
-      // Build absolute URL (keep jsessionid in path)
-      const abs = 'https://www.dresden.de/apps_ext/AbfallApp/' + rel.replace(/^\.\//, '');
-      if (rel.includes('.2-searchForm-street')) wSession.autocompleteUrl = abs;
-      if (rel.includes('.1-searchForm-street')) wSession.hnrUrl          = abs;
-      if (rel.includes('.0-searchForm-street')) wSession.submitUrl        = abs;
-    }
-    wSession.ok = !!(wSession.autocompleteUrl && wSession.hnrUrl && wSession.submitUrl);
-  } catch (e) {
-    console.warn('Wicket session refresh failed:', e);
-  }
-  return wSession.ok;
-}
-
-// Replace the Wicket placeholder &q=no with the real parameter
-function replaceQ(url, newParam) {
-  if (url.includes('&q=no')) return url.replace('&q=no', '&' + newParam);
-  if (url.includes('?q=no')) return url.replace('?q=no', '?' + newParam);
-  return url + '&' + newParam;
-}
-
-function parseItems(html) {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  const out = [];
-  doc.querySelectorAll('li[textvalue]').forEach(li => {
-    const v = li.getAttribute('textvalue') || li.textContent.trim();
-    if (v) out.push(v);
-  });
-  return [...new Set(out)].slice(0, 12);
-}
+let streetDebounce = null;
 
 async function fetchStreets(query) {
-  if (!wSession.ok) throw new Error('Keine Session');
-  const url = replaceQ(wSession.autocompleteUrl, 'q=' + encodeURIComponent(query));
-  const res = await wicketFetch(url);
-  return parseItems(await res.text());
+  const data = await apiFetch('/streets?q=' + encodeURIComponent(query));
+  return Array.isArray(data) ? data : [];
 }
 
 async function fetchHouseNumbers(street) {
-  if (!wSession.ok) throw new Error('Keine Session');
-  // Step 1: set street in Wicket server state (.0- endpoint)
-  const setUrl = replaceQ(wSession.submitUrl, 'street=' + encodeURIComponent(street));
-  await wicketFetch(setUrl);
-  // Step 2: fetch house numbers (.1- endpoint)
-  const hnrUrl = replaceQ(wSession.hnrUrl, 'street=' + encodeURIComponent(street));
-  const res    = await wicketFetch(hnrUrl);
-  return parseItems(await res.text());
-}
-
-async function fetchStandortId(street, houseNumber) {
-  if (!wSession.ok) throw new Error('Keine Session');
-  const url = replaceQ(wSession.submitUrl,
-    'street=' + encodeURIComponent(street) + '&hausnummer=' + encodeURIComponent(houseNumber));
-  const res  = await wicketFetch(url);
-  const html = await res.text();
-  const m    = html.match(/kamm=(\d+)/) || html.match(/STANDORT[=:](\d+)/i);
-  return m ? m[1] : null;
+  const data = await apiFetch('/housenumbers?street=' + encodeURIComponent(street));
+  return Array.isArray(data) ? data : [];
 }
 
 // ── iCal Parser ───────────────────────────────────────────────────────────────
@@ -531,11 +466,11 @@ function parseICal(text) {
 // ── Waste Metadata ────────────────────────────────────────────────────────────
 function wasteInfo(rawType) {
   const t = rawType.replace(/^Leerung\s+/, '').trim();
-  if (t === 'Restabfall')                         return { name:'Restabfall',  emoji:'🗑️', color:'#8E8E93', bg:'rgba(142,142,147,0.14)' };
-  if (t === 'Bio-Tonne' || t === 'Biotonne')      return { name:'Bio-Tonne',   emoji:'🌱', color:'#34C759', bg:'rgba(52,199,89,0.14)'   };
-  if (t === 'Gelbe Tonne' || t === 'Gelbe Säcke') return { name:'Gelbe Tonne', emoji:'♻️', color:'#C49A00', bg:'rgba(255,214,10,0.18)'  };
-  if (t === 'Blaue Tonne' || t === 'Papiertonne') return { name:'Blaue Tonne', emoji:'📄', color:'#007AFF', bg:'rgba(0,122,255,0.12)'   };
-  return { name: t || 'Unbekannt', emoji:'🚮', color:'#8E8E93', bg:'rgba(142,142,147,0.10)' };
+  if (t === 'Restabfall')                         return { name:'Restabfall',  emoji:'\u{1F5D1}\uFE0F', color:'#8E8E93', bg:'rgba(142,142,147,0.14)' };
+  if (t === 'Bio-Tonne' || t === 'Biotonne')      return { name:'Bio-Tonne',   emoji:'\u{1F331}', color:'#34C759', bg:'rgba(52,199,89,0.14)'   };
+  if (t === 'Gelbe Tonne' || t === 'Gelbe S\u00e4cke') return { name:'Gelbe Tonne', emoji:'\u267B\uFE0F', color:'#C49A00', bg:'rgba(255,214,10,0.18)'  };
+  if (t === 'Blaue Tonne' || t === 'Papiertonne') return { name:'Blaue Tonne', emoji:'\u{1F4C4}', color:'#007AFF', bg:'rgba(0,122,255,0.12)'   };
+  return { name: t || 'Unbekannt', emoji:'\u{1F6AE}', color:'#8E8E93', bg:'rgba(142,142,147,0.10)' };
 }
 
 // ── Date Helpers ──────────────────────────────────────────────────────────────
@@ -553,12 +488,12 @@ async function loadEntries(addr) {
   renderTermine();
   const today = new Date();
   const pad   = n => String(n).padStart(2,'0');
-  const von   = `${pad(today.getDate())}.${pad(today.getMonth()+1)}.${today.getFullYear()}`;
-  const bis   = `31.12.${today.getFullYear()}`;
-  const url   = `https://stadtplan.dresden.de/project/cardo3Apps/IDU_DDStadtplan/abfall/ical.ashx` +
-                `?STANDORT=${addr.standortId}&DATUM_VON=${von}&DATUM_BIS=${bis}`;
+  const von   = pad(today.getDate()) + '.' + pad(today.getMonth()+1) + '.' + today.getFullYear();
+  const bis   = '31.12.' + today.getFullYear();
+  const url   = 'https://stadtplan.dresden.de/project/cardo3Apps/IDU_DDStadtplan/abfall/ical.ashx' +
+                '?STANDORT=' + addr.standortId + '&DATUM_VON=' + von + '&DATUM_BIS=' + bis;
   try {
-    const r  = await proxyFetch(url);
+    const r  = await icalFetch(url);
     entries  = parseICal(await r.text());
     loadError = null;
   } catch (err) {
@@ -578,22 +513,22 @@ function renderTermine() {
   if (pb) pb.style.display = addresses.length > 1 ? '' : 'none';
 
   if (!addr) {
-    body.innerHTML = `<div class="state-box"><div class="state-icon">📍</div>
-      <div class="state-title">Keine Adresse</div>
-      <div class="state-desc">Füge unter »Adressen« deine erste Adresse hinzu.</div></div>`;
+    body.innerHTML = '<div class="state-box"><div class="state-icon">\u{1F4CD}</div>' +
+      '<div class="state-title">Keine Adresse</div>' +
+      '<div class="state-desc">F\u00fcge unter \u00BBAdressen\u00AB deine erste Adresse hinzu.</div></div>';
     return;
   }
-  if (isLoading) { body.innerHTML = `<div class="state-box"><div class="spinner"></div></div>`; return; }
+  if (isLoading) { body.innerHTML = '<div class="state-box"><div class="spinner"></div></div>'; return; }
   if (loadError) {
-    body.innerHTML = `<div class="state-box"><div class="state-icon">⚠️</div>
-      <div class="state-title">Fehler beim Laden</div>
-      <div class="state-desc">${loadError}</div></div>`;
+    body.innerHTML = '<div class="state-box"><div class="state-icon">\u26A0\uFE0F</div>' +
+      '<div class="state-title">Fehler beim Laden</div>' +
+      '<div class="state-desc">' + loadError + '</div></div>';
     return;
   }
   if (entries.length === 0) {
-    body.innerHTML = `<div class="state-box"><div class="state-icon">✅</div>
-      <div class="state-title">Keine Termine</div>
-      <div class="state-desc">Keine anstehenden Abfuhrtermine gefunden.</div></div>`;
+    body.innerHTML = '<div class="state-box"><div class="state-icon">\u2705</div>' +
+      '<div class="state-title">Keine Termine</div>' +
+      '<div class="state-desc">Keine anstehenden Abfuhrtermine gefunden.</div></div>';
     return;
   }
   const groups = new Map();
@@ -604,20 +539,20 @@ function renderTermine() {
   }
   let html = '';
   for (const [month, evts] of groups) {
-    html += `<div class="section"><div class="section-label">${month}</div><div class="card">`;
+    html += '<div class="section"><div class="section-label">' + month + '</div><div class="card">';
     for (const e of evts) {
       const info = wasteInfo(e.type);
       const d    = daysUntil(e.date);
       const urgentClass = d <= 1 ? ' urgent' : '';
-      const urgentLabel = d === 0 ? ' — Heute!' : d === 1 ? ' — Morgen!' : d <= 3 ? ` — in ${d} Tagen` : '';
-      html += `<div class="entry-row">
-        <div class="waste-icon" style="background:${info.bg}">${info.emoji}</div>
-        <div class="entry-info">
-          <div class="entry-name" style="color:${info.color}">${info.name}</div>
-          <div class="entry-date${urgentClass}">${fmtDate.format(e.date)}${urgentLabel}</div>
-        </div></div>`;
+      const urgentLabel = d === 0 ? ' \u2014 Heute!' : d === 1 ? ' \u2014 Morgen!' : d <= 3 ? ' \u2014 in ' + d + ' Tagen' : '';
+      html += '<div class="entry-row">' +
+        '<div class="waste-icon" style="background:' + info.bg + '">' + info.emoji + '</div>' +
+        '<div class="entry-info">' +
+          '<div class="entry-name" style="color:' + info.color + '">' + info.name + '</div>' +
+          '<div class="entry-date' + urgentClass + '">' + fmtDate.format(e.date) + urgentLabel + '</div>' +
+        '</div></div>';
     }
-    html += `</div></div>`;
+    html += '</div></div>';
   }
   body.innerHTML = html + '<div style="height:20px"></div>';
 }
@@ -627,22 +562,22 @@ function renderAdressen() {
   if (!body) return;
   const sorted = sortedAddresses();
   if (sorted.length === 0) {
-    body.innerHTML = `<div class="state-box"><div class="state-icon">🏠</div>
-      <div class="state-title">Noch keine Adressen</div>
-      <div class="state-desc">Tippe auf »+ Neu«, um deine erste Adresse hinzuzufügen.</div></div>`;
+    body.innerHTML = '<div class="state-box"><div class="state-icon">\u{1F3E0}</div>' +
+      '<div class="state-title">Noch keine Adressen</div>' +
+      '<div class="state-desc">Tippe auf \u00BB+ Neu\u00AB, um deine erste Adresse hinzuzuf\u00fcgen.</div></div>';
     return;
   }
   let html = '<div class="section"><div class="card">';
   for (const addr of sorted) {
-    const sub = addr.strasse ? `${addr.strasse} ${addr.hausnummer}` : `ID ${addr.standortId}`;
-    html += `<div class="addr-row" onclick="selectAddress('${addr.id}')">
-      <div class="addr-info">
-        <div class="addr-name">${displayName(addr)}</div>
-        <div class="addr-sub">${sub}</div>
-      </div>
-      ${addr.id === activeAddressId ? '<span class="addr-check">✓</span>' : ''}
-      <button class="addr-delete" onclick="event.stopPropagation();deleteAddress('${addr.id}')">&times;</button>
-    </div>`;
+    const sub = addr.strasse ? (addr.strasse + ' ' + addr.hausnummer) : ('ID ' + addr.standortId);
+    html += '<div class="addr-row" onclick="selectAddress(\'' + addr.id + '\')">' +
+      '<div class="addr-info">' +
+        '<div class="addr-name">' + displayName(addr) + '</div>' +
+        '<div class="addr-sub">' + sub + '</div>' +
+      '</div>' +
+      (addr.id === activeAddressId ? '<span class="addr-check">\u2713</span>' : '') +
+      '<button class="addr-delete" onclick="event.stopPropagation();deleteAddress(\'' + addr.id + '\')">&times;</button>' +
+    '</div>';
   }
   body.innerHTML = html + '</div></div><div style="height:20px"></div>';
 }
@@ -651,20 +586,20 @@ function renderEinstellungen() {
   const body = document.getElementById('einstellungen-body');
   if (!body) return;
   const addr = addresses.find(a => a.id === activeAddressId);
-  body.innerHTML = `
-    <div class="section"><div class="section-label">Aktive Adresse</div><div class="card">
-      <div class="info-row"><span class="info-key">Name</span>
-        <span class="info-val">${addr ? displayName(addr) : '—'}</span></div>
-      <div class="info-row"><span class="info-key">STANDORT-ID</span>
-        <span class="info-val">${addr ? addr.standortId : '—'}</span></div>
-    </div></div>
-    <div class="section"><div class="section-label">App</div><div class="card">
-      <div class="info-row"><span class="info-key">Version</span><span class="info-val">1.2</span></div>
-      <div class="info-row"><span class="info-key">Datenquelle</span><span class="info-val">stadtplan.dresden.de</span></div>
-    </div></div>
-    <a href="impressum.html" style="display:block;text-align:center;margin-top:32px;color:#999;font-size:13px;text-decoration:none">
-      Impressum & Datenschutz</a>
-    <div style="height:20px"></div>`;
+  body.innerHTML =
+    '<div class="section"><div class="section-label">Aktive Adresse</div><div class="card">' +
+      '<div class="info-row"><span class="info-key">Name</span>' +
+        '<span class="info-val">' + (addr ? displayName(addr) : '\u2014') + '</span></div>' +
+      '<div class="info-row"><span class="info-key">STANDORT-ID</span>' +
+        '<span class="info-val">' + (addr ? addr.standortId : '\u2014') + '</span></div>' +
+    '</div></div>' +
+    '<div class="section"><div class="section-label">App</div><div class="card">' +
+      '<div class="info-row"><span class="info-key">Version</span><span class="info-val">2.0</span></div>' +
+      '<div class="info-row"><span class="info-key">Datenquelle</span><span class="info-val">stadtplan.dresden.de</span></div>' +
+    '</div></div>' +
+    '<a href="impressum.html" style="display:block;text-align:center;margin-top:32px;color:#999;font-size:13px;text-decoration:none">' +
+      'Impressum & Datenschutz</a>' +
+    '<div style="height:20px"></div>';
 }
 
 // ── Address Management ────────────────────────────────────────────────────────
@@ -676,7 +611,7 @@ function selectAddress(id) {
 }
 
 function deleteAddress(id) {
-  if (!confirm('Adresse löschen?')) return;
+  if (!confirm('Adresse l\u00f6schen?')) return;
   addresses = addresses.filter(a => a.id !== id);
   if (activeAddressId === id) { activeAddressId = addresses[0]?.id ?? null; entries = []; loadError = null; }
   persist(); renderAdressen(); renderTermine(); renderEinstellungen();
@@ -686,30 +621,27 @@ function deleteAddress(id) {
 function switchTab(name) {
   document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(`tab-${name}`)?.classList.add('active');
-  document.getElementById(`tabbtn-${name}`)?.classList.add('active');
+  document.getElementById('tab-' + name)?.classList.add('active');
+  document.getElementById('tabbtn-' + name)?.classList.add('active');
   if (name === 'adressen')      renderAdressen();
   if (name === 'einstellungen') renderEinstellungen();
 }
 
 // ── Sheet ─────────────────────────────────────────────────────────────────────
-async function openSheet() {
-  currentStep = 'street'; selectedStreet = ''; selectedHnr = '';
+function openSheet() {
+  currentStep = 'street'; selectedStreet = ''; selectedHnr = ''; selectedStandortId = null;
+  houseNumberData = [];
   document.getElementById('sheet-backdrop')?.classList.add('open');
   updateSteps();
 
   // Reset inputs
   ['f-street-input','f-label'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const hs = document.getElementById('f-hnr-select');
-  if (hs) hs.innerHTML = '<option value="">Hausnummer auswählen...</option>';
+  if (hs) hs.innerHTML = '<option value="">Hausnummer ausw\u00e4hlen...</option>';
   document.getElementById('street-dropdown').style.display = 'none';
   setBtnReady('btn-next-street', false);
+  setBtnReady('btn-next-hnr', false);
   setStatus('');
-
-  // Load fresh Wicket session via proxy
-  setStatus('Verbinde mit Dresden...');
-  const ok = await refreshWicketSession();
-  setStatus(ok ? '' : '⚠️ Verbindung fehlgeschlagen – bitte erneut versuchen.');
   document.getElementById('f-street-input')?.focus();
 }
 
@@ -738,7 +670,7 @@ function setBtnReady(id, ready) {
 
 function updateSteps() {
   document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
-  document.getElementById(`step-${currentStep}`)?.classList.add('active');
+  document.getElementById('step-' + currentStep)?.classList.add('active');
 }
 
 function nextStep() {
@@ -746,7 +678,7 @@ function nextStep() {
     currentStep = 'hnr'; updateSteps(); loadHouseNumbers();
   } else if (currentStep === 'hnr' && selectedHnr) {
     currentStep = 'save';
-    document.getElementById('addr-preview').textContent = `${selectedStreet} ${selectedHnr}`;
+    document.getElementById('addr-preview').textContent = selectedStreet + ' ' + selectedHnr;
     updateSteps();
   }
 }
@@ -765,22 +697,27 @@ document.addEventListener('click', e => {
   if (!dd.contains(e.target) && !inp.contains(e.target)) dd.style.display = 'none';
 });
 
-async function onStreetInput(value) {
+function onStreetInput(value) {
   const dd = document.getElementById('street-dropdown');
   selectedStreet = '';
   setBtnReady('btn-next-street', false);
   if (value.length < 2) { dd.style.display = 'none'; return; }
-  try {
-    const streets = await fetchStreets(value);
-    if (streets.length > 0) {
-      dd.innerHTML = streets.map(s =>
-        `<div class="dropdown-item" onclick="selectStreet('${s.replace(/'/g,"\\'")}')"> ${s}</div>`
-      ).join('');
-      dd.style.display = 'block';
-    } else {
-      dd.style.display = 'none';
-    }
-  } catch { dd.style.display = 'none'; }
+
+  // Debounce 300ms
+  clearTimeout(streetDebounce);
+  streetDebounce = setTimeout(async () => {
+    try {
+      const streets = await fetchStreets(value);
+      if (streets.length > 0) {
+        dd.innerHTML = streets.slice(0, 8).map(s =>
+          '<div class="dropdown-item" onclick="selectStreet(\'' + s.replace(/'/g, "\\'") + '\')">' + s + '</div>'
+        ).join('');
+        dd.style.display = 'block';
+      } else {
+        dd.style.display = 'none';
+      }
+    } catch { dd.style.display = 'none'; }
+  }, 300);
 }
 
 function selectStreet(street) {
@@ -793,49 +730,56 @@ function selectStreet(street) {
 async function loadHouseNumbers() {
   const select = document.getElementById('f-hnr-select');
   setBtnReady('btn-next-hnr', false);
+  selectedHnr = '';
+  selectedStandortId = null;
   select.innerHTML = '<option value="">Lade Hausnummern...</option>';
   try {
-    const hnrs = await fetchHouseNumbers(selectedStreet);
-    select.innerHTML = hnrs.length > 0
-      ? '<option value="">Hausnummer auswählen...</option>' + hnrs.map(h => `<option value="${h}">${h}</option>`).join('')
-      : '<option value="">Keine Hausnummern gefunden</option>';
+    houseNumberData = await fetchHouseNumbers(selectedStreet);
+    if (houseNumberData.length > 0) {
+      select.innerHTML = '<option value="">Hausnummer ausw\u00e4hlen...</option>' +
+        houseNumberData.map(h =>
+          '<option value="' + h.standortId + '">' + h.nr + '</option>'
+        ).join('');
+    } else {
+      select.innerHTML = '<option value="">Keine Hausnummern gefunden</option>';
+    }
   } catch {
     select.innerHTML = '<option value="">Fehler beim Laden</option>';
   }
 }
 
 function onHnrSelect(value) {
-  selectedHnr = value;
-  setBtnReady('btn-next-hnr', !!value);
+  if (!value) { selectedHnr = ''; selectedStandortId = null; setBtnReady('btn-next-hnr', false); return; }
+  // value is the standortId from the API
+  selectedStandortId = value;
+  const found = houseNumberData.find(h => String(h.standortId) === String(value));
+  selectedHnr = found ? found.nr : value;
+  setBtnReady('btn-next-hnr', true);
 }
 
 async function saveNewAddress() {
   const btn = document.getElementById('btn-save');
   btn.disabled = true;
-  setStatus('Ermittle Standort-ID...');
 
-  let standortId = null;
-  try { standortId = await fetchStandortId(selectedStreet, selectedHnr); } catch { /* ignore */ }
+  let standortId = selectedStandortId;
 
+  // If we don't have a standortId yet (shouldn't happen with the new API), try to get it
   if (!standortId) {
-    const link = prompt(
-      'Standort-ID konnte nicht automatisch ermittelt werden.\n\n' +
-      'Bitte öffne:\nhttps://www.dresden.de/apps_ext/AbfallApp/wastebins\n\n' +
-      'Suche deine Adresse → „Jetzt finden" → Rechtsklick auf iCal-Link → „Link kopieren" und hier einfügen:'
-    );
-    if (!link) { btn.disabled = false; setStatus(''); return; }
-    const m = String(link).match(/kamm=(\d+)|STANDORT=(\d+)/i);
-    standortId = m ? (m[1] || m[2]) : null;
+    setStatus('Ermittle Standort-ID...');
+    try {
+      const data = await apiFetch('/standortid?street=' + encodeURIComponent(selectedStreet) + '&nr=' + encodeURIComponent(selectedHnr));
+      standortId = data.standortId ? String(data.standortId) : null;
+    } catch { /* ignore */ }
   }
 
   if (!standortId) {
-    setStatus('⚠️ Keine Standort-ID gefunden. Bitte erneut versuchen.');
+    setStatus('\u26A0\uFE0F Standort-ID konnte nicht ermittelt werden.');
     btn.disabled = false;
     return;
   }
 
   const label = document.getElementById('f-label')?.value.trim() || '';
-  const addr  = { id: uid(), label, strasse: selectedStreet, hausnummer: selectedHnr, standortId, version: 2 };
+  const addr  = { id: uid(), label, strasse: selectedStreet, hausnummer: selectedHnr, standortId: String(standortId), version: 2 };
   addresses.push(addr);
   if (!activeAddressId) activeAddressId = addr.id;
   persist(); closeSheet(); renderAdressen();
@@ -856,10 +800,10 @@ function openAddrPicker(e) {
   const rect = e?.currentTarget?.getBoundingClientRect() ?? { bottom: 60 };
   picker.style.top     = (rect.bottom + 4) + 'px';
   picker.style.display = '';
-  picker.innerHTML = sortedAddresses().map(a => `
-    <div class="addr-picker-item ${a.id === activeAddressId ? 'selected' : ''}" onclick="selectAddress('${a.id}')">
-      ${displayName(a)} ${a.id === activeAddressId ? '<span>✓</span>' : ''}
-    </div>`).join('');
+  picker.innerHTML = sortedAddresses().map(a =>
+    '<div class="addr-picker-item ' + (a.id === activeAddressId ? 'selected' : '') + '" onclick="selectAddress(\'' + a.id + '\')">' +
+      displayName(a) + (a.id === activeAddressId ? ' <span>\u2713</span>' : '') +
+    '</div>').join('');
   pickerOpen = true;
   requestAnimationFrame(() => document.addEventListener('click', closeAddrPicker, { once: true }));
 }
