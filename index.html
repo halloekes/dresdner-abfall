@@ -478,8 +478,8 @@ async function apiFetch(path) {
   return r.json();
 }
 
-// Wake up the Render server on page load so it's ready when the user needs it
-fetch(API_BASE + '/streets?q=_ping', { signal: AbortSignal.timeout(65000) })
+// Wake up the Render server on page load (lightweight /ping, no Dresden dependency)
+fetch(API_BASE + '/ping', { signal: AbortSignal.timeout(65000) })
   .then(() => { apiWarm = true; })
   .catch(() => {});
 
