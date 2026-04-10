@@ -359,11 +359,20 @@ async function icalFetch(url) {
   throw new Error('iCal-Daten konnten nicht geladen werden');
 }
 
+let apiWarm = false;
 async function apiFetch(path) {
-  const r = await fetch(API_BASE + path, { signal: AbortSignal.timeout(15000) });
+  // Render free tier cold start can take up to 60s
+  const timeout = apiWarm ? 20000 : 65000;
+  const r = await fetch(API_BASE + path, { signal: AbortSignal.timeout(timeout) });
+  apiWarm = true;
   if (!r.ok) throw new Error('API-Fehler: ' + r.status);
   return r.json();
 }
+
+// Wake up the Render server on page load so it's ready when the user needs it
+fetch(API_BASE + '/streets?q=_ping', { signal: AbortSignal.timeout(65000) })
+  .then(() => { apiWarm = true; })
+  .catch(() => {});
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let addresses       = [];
@@ -706,6 +715,9 @@ function onStreetInput(value) {
   // Debounce 300ms
   clearTimeout(streetDebounce);
   streetDebounce = setTimeout(async () => {
+    // Show loading indicator while waiting (important for Render cold start)
+    dd.innerHTML = '<div class="dropdown-item" style="color:var(--label3);justify-content:center"><div class="spinner" style="width:18px;height:18px;border-width:2px;margin-right:8px"></div>Suche Straßen...</div>';
+    dd.style.display = 'block';
     try {
       const streets = await fetchStreets(value);
       if (streets.length > 0) {
@@ -716,7 +728,9 @@ function onStreetInput(value) {
       } else {
         dd.style.display = 'none';
       }
-    } catch { dd.style.display = 'none'; }
+    } catch {
+      dd.innerHTML = '<div class="dropdown-item" style="color:var(--red)">Verbindung fehlgeschlagen – bitte erneut versuchen</div>';
+    }
   }, 300);
 }
 
