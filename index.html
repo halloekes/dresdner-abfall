@@ -80,6 +80,24 @@
     .entry-name { font-size: 16px; font-weight: 600; }
     .entry-date { font-size: 14px; color: var(--label3); margin-top: 2px; }
     .entry-date.urgent { color: var(--orange); font-weight: 500; }
+    .entry-cal { background: none; border: none; color: var(--blue); font-size: 18px;
+      padding: 6px 8px; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent;
+      border-radius: 8px; }
+    .entry-cal:active { background: rgba(0,122,255,0.1); }
+
+    .chip-row { display: flex; gap: 8px; padding: 0 16px; margin-top: 12px; flex-wrap: wrap; }
+    .chip { padding: 7px 14px; border-radius: 20px; font-size: 14px; font-weight: 500;
+      cursor: pointer; -webkit-tap-highlight-color: transparent; border: 1.5px solid var(--border);
+      background: var(--surface); color: var(--label); transition: all 0.2s; }
+    .chip.selected { background: var(--blue); color: white; border-color: var(--blue); }
+
+    .toggle-row { display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; border-bottom: 0.5px solid var(--border); min-height: 44px; }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-label { font-size: 16px; color: var(--label); }
+    .toggle-sub { font-size: 13px; color: var(--label3); margin-top: 2px; }
+    .time-input { background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px;
+      padding: 6px 10px; font-size: 15px; color: var(--label); -webkit-appearance: none; }
 
     .addr-row { display: flex; align-items: center; padding: 12px 16px; gap: 12px;
       border-bottom: 0.5px solid var(--border); cursor: pointer;
@@ -335,6 +353,104 @@
   </div>
 </div>
 
+<!-- REMINDER / CALENDAR SHEET -->
+<div id="cal-backdrop" class="backdrop" onclick="if(event.target===event.currentTarget)closeCalSheet()">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <button class="btn-text" onclick="closeCalSheet()">Abbrechen</button>
+      <div class="sheet-title" id="cal-sheet-title">Erinnerung</div>
+      <div style="width:80px"></div>
+    </div>
+    <div class="sheet-body">
+
+      <!-- Modus: Einzeltermin / Serie -->
+      <div class="form-section">
+        <div class="form-label">Modus</div>
+        <div class="chip-row" id="cal-mode-chips"></div>
+      </div>
+
+      <!-- Info zum Termin -->
+      <div class="form-section" style="margin-top:16px">
+        <div class="form-label" id="cal-info-label">Termin</div>
+        <div class="form-card">
+          <div class="toggle-row" style="border-bottom:none">
+            <div id="cal-info-text" style="font-size:15px;color:var(--label)"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Erinnerung 1: Vorabend -->
+      <div class="form-section" style="margin-top:16px">
+        <div class="form-label">Erinnerung am Vorabend</div>
+        <div class="form-card">
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Vorabend-Erinnerung</div>
+              <div class="toggle-sub">Standard: 19:00 Uhr</div>
+            </div>
+            <input type="checkbox" id="cal-r1-on" checked onchange="updateCalPreview()">
+          </div>
+          <div class="toggle-row" id="cal-r1-time-row">
+            <div class="toggle-label">Uhrzeit</div>
+            <input type="time" class="time-input" id="cal-r1-time" value="19:00" onchange="updateCalPreview()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Erinnerung 2: Abholtag -->
+      <div class="form-section" style="margin-top:16px">
+        <div class="form-label">Erinnerung am Abholtag</div>
+        <div class="form-card">
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Morgen-Erinnerung</div>
+              <div class="toggle-sub">Standard: 07:00 Uhr</div>
+            </div>
+            <input type="checkbox" id="cal-r2-on" onchange="updateCalPreview()">
+          </div>
+          <div class="toggle-row" id="cal-r2-time-row" style="display:none">
+            <div class="toggle-label">Uhrzeit</div>
+            <input type="time" class="time-input" id="cal-r2-time" value="07:00" onchange="updateCalPreview()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Kalender-Event -->
+      <div class="form-section" style="margin-top:16px">
+        <div class="form-label">Kalender-Eintrag</div>
+        <div class="form-card">
+          <div class="toggle-row" style="border-bottom:none">
+            <div>
+              <div class="toggle-label">Ganztags-Event im Kalender</div>
+              <div class="toggle-sub">Abfuhrtermin als Kalendereintrag</div>
+            </div>
+            <input type="checkbox" id="cal-event-on" checked onchange="updateCalPreview()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Vorschau -->
+      <div class="form-section" style="margin-top:16px">
+        <div class="form-label">Vorschau</div>
+        <div class="form-card">
+          <div class="toggle-row" style="border-bottom:none">
+            <div id="cal-preview" style="font-size:14px;color:var(--label3);line-height:1.5"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="form-section" style="margin-top:20px;margin-bottom:24px">
+        <button class="btn-primary ready" id="btn-cal-save" onclick="downloadCalEntry()">
+          &#x1F4C5; Zum Kalender hinzuf&uuml;gen
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <script>
 'use strict';
 
@@ -554,12 +670,15 @@ function renderTermine() {
       const d    = daysUntil(e.date);
       const urgentClass = d <= 1 ? ' urgent' : '';
       const urgentLabel = d === 0 ? ' \u2014 Heute!' : d === 1 ? ' \u2014 Morgen!' : d <= 3 ? ' \u2014 in ' + d + ' Tagen' : '';
+      const eDateStr = e.date.getFullYear() + '-' + String(e.date.getMonth()+1).padStart(2,'0') + '-' + String(e.date.getDate()).padStart(2,'0');
       html += '<div class="entry-row">' +
         '<div class="waste-icon" style="background:' + info.bg + '">' + info.emoji + '</div>' +
         '<div class="entry-info">' +
           '<div class="entry-name" style="color:' + info.color + '">' + info.name + '</div>' +
           '<div class="entry-date' + urgentClass + '">' + fmtDate.format(e.date) + urgentLabel + '</div>' +
-        '</div></div>';
+        '</div>' +
+        '<button class="entry-cal" onclick="openCalSheet(\'' + e.type.replace(/'/g,"\\'") + '\',\'' + eDateStr + '\')" title="Erinnerung/Kalender">&#x1F514;</button>' +
+      '</div>';
     }
     html += '</div></div>';
   }
@@ -603,7 +722,7 @@ function renderEinstellungen() {
         '<span class="info-val">' + (addr ? addr.standortId : '\u2014') + '</span></div>' +
     '</div></div>' +
     '<div class="section"><div class="section-label">App</div><div class="card">' +
-      '<div class="info-row"><span class="info-key">Version</span><span class="info-val">2.0</span></div>' +
+      '<div class="info-row"><span class="info-key">Version</span><span class="info-val">2.1</span></div>' +
       '<div class="info-row"><span class="info-key">Datenquelle</span><span class="info-val">stadtplan.dresden.de</span></div>' +
     '</div></div>' +
     '<a href="impressum.html" style="display:block;text-align:center;margin-top:32px;color:#999;font-size:13px;text-decoration:none">' +
@@ -825,6 +944,187 @@ function openAddrPicker(e) {
 function closeAddrPicker() {
   document.getElementById('addr-picker').style.display = 'none';
   pickerOpen = false;
+}
+
+// ── Calendar / Reminder Sheet ────────────────────────────────────────────────
+let calType = '';      // waste type name
+let calDate = null;    // Date object of tapped entry
+let calMode = 'single'; // 'single' or 'series'
+
+function openCalSheet(type, dateStr) {
+  calType = type;
+  calDate = new Date(dateStr + 'T00:00:00');
+  calMode = 'single';
+
+  const info = wasteInfo(type);
+  document.getElementById('cal-sheet-title').textContent = info.name;
+
+  // Reset defaults
+  document.getElementById('cal-r1-on').checked = true;
+  document.getElementById('cal-r1-time').value = '19:00';
+  document.getElementById('cal-r2-on').checked = false;
+  document.getElementById('cal-r2-time').value = '07:00';
+  document.getElementById('cal-event-on').checked = true;
+
+  // Build mode chips
+  const seriesCount = entries.filter(e => e.type === type).length;
+  const chips = document.getElementById('cal-mode-chips');
+  chips.innerHTML =
+    '<div class="chip selected" onclick="setCalMode(\'single\',this)">Einzeltermin</div>' +
+    '<div class="chip" onclick="setCalMode(\'series\',this)">Serie ' + info.name + ' (' + seriesCount + ')</div>';
+
+  updateCalPreview();
+  document.getElementById('cal-backdrop').classList.add('open');
+}
+
+function closeCalSheet() {
+  document.getElementById('cal-backdrop').classList.remove('open');
+}
+
+function setCalMode(mode, chip) {
+  calMode = mode;
+  document.querySelectorAll('#cal-mode-chips .chip').forEach(c => c.classList.remove('selected'));
+  chip.classList.add('selected');
+  updateCalPreview();
+}
+
+function updateCalPreview() {
+  const r1on = document.getElementById('cal-r1-on').checked;
+  const r2on = document.getElementById('cal-r2-on').checked;
+  const evOn = document.getElementById('cal-event-on').checked;
+  const r1time = document.getElementById('cal-r1-time').value;
+  const r2time = document.getElementById('cal-r2-time').value;
+
+  // Show/hide time rows
+  document.getElementById('cal-r1-time-row').style.display = r1on ? '' : 'none';
+  document.getElementById('cal-r2-time-row').style.display = r2on ? '' : 'none';
+
+  // Info text
+  const info = wasteInfo(calType);
+  const infoEl = document.getElementById('cal-info-text');
+  const infoLabel = document.getElementById('cal-info-label');
+  if (calMode === 'single') {
+    infoLabel.textContent = 'Termin';
+    infoEl.textContent = info.name + ' — ' + fmtDate.format(calDate);
+  } else {
+    const dates = entries.filter(e => e.type === calType);
+    infoLabel.textContent = 'Serie (' + dates.length + ' Termine)';
+    infoEl.textContent = info.name + ': ' + dates.length + ' Termine bis Jahresende';
+  }
+
+  // Preview
+  const lines = [];
+  if (evOn) lines.push('📅 Ganztags-Kalendereintrag' + (calMode === 'series' ? ' (je Termin)' : ''));
+  if (r1on) lines.push('🔔 Erinnerung Vorabend um ' + r1time + ' Uhr');
+  if (r2on) lines.push('🔔 Erinnerung Abholtag um ' + r2time + ' Uhr');
+  if (lines.length === 0) lines.push('Keine Erinnerung oder Kalendereintrag ausgewählt');
+  document.getElementById('cal-preview').innerHTML = lines.join('<br>');
+
+  // Button state
+  const btn = document.getElementById('btn-cal-save');
+  btn.disabled = !r1on && !r2on && !evOn;
+}
+
+function generateICS(eventDates, typeName, r1on, r1time, r2on, r2time, addEvent) {
+  const pad = n => String(n).padStart(2, '0');
+  const fmtIcalDate = d => d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate());
+  const fmtIcalDateTime = (d, time) => {
+    const [h, m] = time.split(':');
+    return d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + 'T' + pad(+h) + pad(+m) + '00';
+  };
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2) + '@dresdner-abfall';
+
+  let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Dresdner Abfall//PWA//DE\r\nCALSCALE:GREGORIAN\r\n';
+
+  for (const date of eventDates) {
+    const dayBefore = new Date(date);
+    dayBefore.setDate(dayBefore.getDate() - 1);
+
+    if (addEvent) {
+      // All-day calendar event on collection day
+      const nextDay = new Date(date);
+      nextDay.setDate(nextDay.getDate() + 1);
+      ics += 'BEGIN:VEVENT\r\n';
+      ics += 'UID:' + uid() + '\r\n';
+      ics += 'DTSTART;VALUE=DATE:' + fmtIcalDate(date) + '\r\n';
+      ics += 'DTEND;VALUE=DATE:' + fmtIcalDate(nextDay) + '\r\n';
+      ics += 'SUMMARY:🗑 ' + typeName + ' Abholung\r\n';
+      ics += 'DESCRIPTION:Abfuhrtermin ' + typeName + '\r\n';
+
+      // Attach reminders to the calendar event
+      if (r1on) {
+        // Evening before reminder
+        ics += 'BEGIN:VALARM\r\n';
+        ics += 'TRIGGER;VALUE=DATE-TIME:' + fmtIcalDateTime(dayBefore, r1time) + '\r\n';
+        ics += 'ACTION:DISPLAY\r\n';
+        ics += 'DESCRIPTION:Morgen ' + typeName + ' rausstellen!\r\n';
+        ics += 'END:VALARM\r\n';
+      }
+      if (r2on) {
+        // Morning-of reminder
+        ics += 'BEGIN:VALARM\r\n';
+        ics += 'TRIGGER;VALUE=DATE-TIME:' + fmtIcalDateTime(date, r2time) + '\r\n';
+        ics += 'ACTION:DISPLAY\r\n';
+        ics += 'DESCRIPTION:Heute ' + typeName + ' Abholung!\r\n';
+        ics += 'END:VALARM\r\n';
+      }
+      ics += 'END:VEVENT\r\n';
+
+    } else {
+      // No calendar event, but create reminder-only events
+      if (r1on) {
+        ics += 'BEGIN:VEVENT\r\n';
+        ics += 'UID:' + uid() + '\r\n';
+        ics += 'DTSTART:' + fmtIcalDateTime(dayBefore, r1time) + '\r\n';
+        ics += 'DTEND:' + fmtIcalDateTime(dayBefore, r1time) + '\r\n';
+        ics += 'SUMMARY:🔔 ' + typeName + ' morgen rausstellen\r\n';
+        ics += 'BEGIN:VALARM\r\nTRIGGER:PT0S\r\nACTION:DISPLAY\r\n';
+        ics += 'DESCRIPTION:Morgen ' + typeName + ' rausstellen!\r\n';
+        ics += 'END:VALARM\r\nEND:VEVENT\r\n';
+      }
+      if (r2on) {
+        ics += 'BEGIN:VEVENT\r\n';
+        ics += 'UID:' + uid() + '\r\n';
+        ics += 'DTSTART:' + fmtIcalDateTime(date, r2time) + '\r\n';
+        ics += 'DTEND:' + fmtIcalDateTime(date, r2time) + '\r\n';
+        ics += 'SUMMARY:🔔 Heute ' + typeName + ' Abholung\r\n';
+        ics += 'BEGIN:VALARM\r\nTRIGGER:PT0S\r\nACTION:DISPLAY\r\n';
+        ics += 'DESCRIPTION:Heute ' + typeName + ' Abholung!\r\n';
+        ics += 'END:VALARM\r\nEND:VEVENT\r\n';
+      }
+    }
+  }
+
+  ics += 'END:VCALENDAR\r\n';
+  return ics;
+}
+
+function downloadCalEntry() {
+  const r1on = document.getElementById('cal-r1-on').checked;
+  const r2on = document.getElementById('cal-r2-on').checked;
+  const evOn = document.getElementById('cal-event-on').checked;
+  const r1time = document.getElementById('cal-r1-time').value || '19:00';
+  const r2time = document.getElementById('cal-r2-time').value || '07:00';
+  const info = wasteInfo(calType);
+
+  let eventDates;
+  if (calMode === 'single') {
+    eventDates = [calDate];
+  } else {
+    eventDates = entries.filter(e => e.type === calType).map(e => e.date);
+  }
+
+  const ics = generateICS(eventDates, info.name, r1on, r1time, r2on, r2time, evOn);
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = info.name.replace(/\s+/g, '_') + (calMode === 'series' ? '_Serie' : '_' + calDate.toISOString().slice(0,10)) + '.ics';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  closeCalSheet();
 }
 
 // ── Auto-refresh on app resume ────────────────────────────────────────────────
