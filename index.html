@@ -459,20 +459,13 @@
 // clean JSON endpoints. No more CORS proxies or session juggling in the browser.
 const API_BASE = 'https://dresdner-abfall-api.onrender.com';
 
-// CORS proxy still needed for the iCal download (stadtplan.dresden.de)
-const ICAL_PROXIES = [
-  u => 'https://corsproxy.io/?' + encodeURIComponent(u),
-  u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
-];
-
-async function icalFetch(url) {
-  for (const make of ICAL_PROXIES) {
-    try {
-      const r = await fetch(make(url), { signal: AbortSignal.timeout(15000) });
-      if (r.ok) return r;
-    } catch { /* try next proxy */ }
-  }
-  throw new Error('iCal-Daten konnten nicht geladen werden');
+// iCal data is fetched through our own API server (no more CORS proxies)
+async function icalFetch(standortId, von, bis) {
+  const timeout = apiWarm ? 20000 : 65000;
+  const r = await fetch(API_BASE + '/ical?standort=' + standortId + '&von=' + encodeURIComponent(von) + '&bis=' + encodeURIComponent(bis), { signal: AbortSignal.timeout(timeout) });
+  apiWarm = true;
+  if (!r.ok) throw new Error('iCal-Daten konnten nicht geladen werden (HTTP ' + r.status + ')');
+  return r;
 }
 
 let apiWarm = false;
@@ -615,10 +608,8 @@ async function loadEntries(addr) {
   const pad   = n => String(n).padStart(2,'0');
   const von   = pad(today.getDate()) + '.' + pad(today.getMonth()+1) + '.' + today.getFullYear();
   const bis   = '31.12.' + today.getFullYear();
-  const url   = 'https://stadtplan.dresden.de/project/cardo3Apps/IDU_DDStadtplan/abfall/ical.ashx' +
-                '?STANDORT=' + addr.standortId + '&DATUM_VON=' + von + '&DATUM_BIS=' + bis;
   try {
-    const r  = await icalFetch(url);
+    const r  = await icalFetch(addr.standortId, von, bis);
     entries  = parseICal(await r.text());
     loadError = null;
   } catch (err) {

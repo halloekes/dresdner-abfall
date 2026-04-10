@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dresdner-abfall-v12';
+const CACHE_NAME = 'dresdner-abfall-v13';
 const CACHE_URLS = [
   'index.html',
   'impressum.html',
