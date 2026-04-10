@@ -885,16 +885,14 @@ async function saveNewAddress() {
   const btn = document.getElementById('btn-save');
   btn.disabled = true;
 
-  let standortId = selectedStandortId;
-
-  // If we don't have a standortId yet (shouldn't happen with the new API), try to get it
-  if (!standortId) {
-    setStatus('Ermittle Standort-ID...');
-    try {
-      const data = await apiFetch('/standortid?street=' + encodeURIComponent(selectedStreet) + '&nr=' + encodeURIComponent(selectedHnr));
-      standortId = data.standortId ? String(data.standortId) : null;
-    } catch { /* ignore */ }
-  }
+  // Always fetch the real STANDORT ID from the API (Wicket dropdown values are internal IDs,
+  // NOT the stadtplan.dresden.de STANDORT IDs needed for iCal)
+  setStatus('Ermittle Standort-ID...');
+  let standortId = null;
+  try {
+    const data = await apiFetch('/standortid?street=' + encodeURIComponent(selectedStreet) + '&nr=' + encodeURIComponent(selectedHnr));
+    standortId = data.standortId ? String(data.standortId) : null;
+  } catch { /* ignore */ }
 
   if (!standortId) {
     setStatus('\u26A0\uFE0F Standort-ID konnte nicht ermittelt werden.');
